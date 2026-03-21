@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0 --webpack",
     "build": "next build",
-    "start": "node scripts/start-standalone.js",
+    "start": "node -r dotenv/config scripts/start-standalone.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

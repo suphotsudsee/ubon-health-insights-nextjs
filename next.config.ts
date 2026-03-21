@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  allowedDevOrigins: ['state.phoubon.in.th'],
 
   // Enable experimental features if needed
   experimental: {

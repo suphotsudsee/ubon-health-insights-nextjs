@@ -18,11 +18,12 @@ services:
       - "${APP_PORT:-3000}:3000"
     environment:
       # Database connection
-      - DATABASE_URL=mysql://root:${DB_ROOT_PASSWORD:-12345678}@host.docker.internal:${DB_PORT:-3306}/${DB_NAME:-ubon_health}
+      - DATABASE_URL=${DATABASE_URL:-mysql://root:${DB_ROOT_PASSWORD:-12345678}@host.docker.internal:${DB_PORT:-3306}/${DB_NAME:-ubon_health}}
       
       # NextAuth.js configuration
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       
       # Application environment
       - NODE_ENV=production

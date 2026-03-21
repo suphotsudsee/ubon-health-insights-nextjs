@@ -13,6 +13,7 @@ type AppToken = {
 };
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "credentials",
