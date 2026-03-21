@@ -1,0 +1,126 @@
+﻿{
+    "Agent":  "team-director",
+    "Workspace":  "workspace-ceo",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-team-director.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "router",
+    "Workspace":  "workspace-coo",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-router.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "prompt-optimizer",
+    "Workspace":  "workspace-tech-writer",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-prompt-optimizer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "task-planner",
+    "Workspace":  "workspace-coo",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-task-planner.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "research-analyst",
+    "Workspace":  "workspace-research",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-research-analyst.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "product-manager",
+    "Workspace":  "workspace-pm",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-product-manager.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "system-architect",
+    "Workspace":  "workspace-solution-architect",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-system-architect.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "sql-dba",
+    "Workspace":  "workspace-data",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-sql-dba.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "data-engineer",
+    "Workspace":  "workspace-data",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-data-engineer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "healthcare-analyst",
+    "Workspace":  "workspace-healthcare",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-healthcare-analyst.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "dashboard-architect",
+    "Workspace":  "workspace-solution-architect",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-dashboard-architect.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "backend-engineer",
+    "Workspace":  "workspace-backend",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-backend-engineer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "frontend-engineer",
+    "Workspace":  "workspace-frontend",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-frontend-engineer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "security-reviewer",
+    "Workspace":  "workspace-security",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-security-reviewer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "qa-reviewer",
+    "Workspace":  "workspace-qa",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-qa-reviewer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "doc-writer",
+    "Workspace":  "workspace-tech-writer",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-doc-writer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "devops-engineer",
+    "Workspace":  "workspace-devops",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-devops-engineer.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
+{
+    "Agent":  "release-manager",
+    "Workspace":  "workspace-coo",
+    "TaskFile":  "C:\\fullstack\\ubon-health-insights-nextjs\\docs\\task-release-manager.md",
+    "Timestamp":  "2026-03-21 11:23:28",
+    "Status":  "queued"
+}
