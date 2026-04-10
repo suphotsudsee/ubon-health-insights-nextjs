@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -63,6 +63,21 @@ type HealthUnitItem = {
   affiliation: string | null;
   email: string | null;
   phone: string | null;
+  transferYear: number | null;
+  unitSize: string | null;
+  cupCode: string | null;
+  cupName: string | null;
+  localAuthority: string | null;
+  province: string | null;
+  ucPopulation66: number | null;
+  ucPopulation67: number | null;
+  ucPopulation68: number | null;
+  templeCount: number;
+  primarySchoolCount: number;
+  opportunitySchoolCount: number;
+  secondarySchoolCount: number;
+  childDevelopmentCenterCount: number;
+  healthStationCount: number;
   status: "active" | "inactive";
 };
 
@@ -71,6 +86,7 @@ type HealthUnitDetailItem = HealthUnitItem & {
     totalPopulation: number | null;
     male: number | null;
     female: number | null;
+    elderlyPopulation: number | null;
     villages: number | null;
     households: number | null;
     healthVolunteers: number | null;
@@ -160,12 +176,28 @@ type UnitFormState = {
   affiliation: string;
   email: string;
   phone: string;
+  transferYear: string;
+  unitSize: string;
+  cupCode: string;
+  cupName: string;
+  localAuthority: string;
+  province: string;
+  ucPopulation66: string;
+  ucPopulation67: string;
+  ucPopulation68: string;
   male: string;
   female: string;
+  elderlyPopulation: string;
   totalPopulation: string;
   villages: string;
   households: string;
   healthVolunteers: string;
+  templeCount: string;
+  primarySchoolCount: string;
+  opportunitySchoolCount: string;
+  secondarySchoolCount: string;
+  childDevelopmentCenterCount: string;
+  healthStationCount: string;
   status: "active" | "inactive";
 };
 
@@ -212,12 +244,28 @@ const emptyUnitForm: UnitFormState = {
   affiliation: "",
   email: "",
   phone: "",
+  transferYear: "",
+  unitSize: "",
+  cupCode: "",
+  cupName: "",
+  localAuthority: "",
+  province: "",
+  ucPopulation66: "0",
+  ucPopulation67: "0",
+  ucPopulation68: "0",
   male: "0",
   female: "0",
+  elderlyPopulation: "0",
   totalPopulation: "0",
   villages: "0",
   households: "0",
   healthVolunteers: "0",
+  templeCount: "0",
+  primarySchoolCount: "0",
+  opportunitySchoolCount: "0",
+  secondarySchoolCount: "0",
+  childDevelopmentCenterCount: "0",
+  healthStationCount: "0",
   status: "active",
 };
 
@@ -261,7 +309,7 @@ function getKpiCategoryLabel(category: KpiCategoryItem) {
     return "PPFS";
   }
   if (category.code === "TTM") {
-    return "แพทย์แผนไทย";
+    return "เนเธเธ—เธขเนเนเธเธเนเธ—เธข";
   }
   return category.nameTh;
 }
@@ -310,6 +358,8 @@ export function SettingsDashboard() {
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [search, setSearch] = useState("");
   const [unitSearch, setUnitSearch] = useState("");
+  const [unitTransferYearFilter, setUnitTransferYearFilter] = useState("");
+  const [unitSizeFilter, setUnitSizeFilter] = useState("all");
   const [fiscalYearForm, setFiscalYearForm] = useState<FiscalYearFormState>(emptyFiscalYearForm);
   const [editingPeriod, setEditingPeriod] = useState<FiscalPeriodItem | null>(null);
   const [kpiSearch, setKpiSearch] = useState("");
@@ -327,7 +377,7 @@ export function SettingsDashboard() {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(body?.error || "โหลดข้อมูลไม่สำเร็จ");
+      throw new Error(body?.error || "เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธชเธณเน€เธฃเนเธ");
     }
     return response.json() as Promise<T>;
   }
@@ -387,7 +437,7 @@ export function SettingsDashboard() {
       setKpiDefinitions(kpiData.definitions);
       setKpiCategories(kpiCategoriesData);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      setError(loadError instanceof Error ? loadError.message : "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅ");
     } finally {
       setIsLoading(false);
     }
@@ -423,19 +473,21 @@ export function SettingsDashboard() {
 
   const filteredUnits = useMemo(() => {
     const keyword = unitSearch.trim().toLowerCase();
-    if (!keyword) {
-      return units;
-    }
-
     return units.filter((unit) => {
-      return (
+      const matchesKeyword =
+        !keyword ||
         unit.code.toLowerCase().includes(keyword) ||
         unit.name.toLowerCase().includes(keyword) ||
         unit.amphoeName.toLowerCase().includes(keyword) ||
-        (unit.tambonName || "").toLowerCase().includes(keyword)
-      );
+        (unit.tambonName || "").toLowerCase().includes(keyword);
+      const matchesTransferYear =
+        !unitTransferYearFilter ||
+        String(unit.transferYear || "").includes(unitTransferYearFilter.trim());
+      const matchesSize = unitSizeFilter === "all" || unit.unitSize === unitSizeFilter;
+
+      return matchesKeyword && matchesTransferYear && matchesSize;
     });
-  }, [unitSearch, units]);
+  }, [unitSearch, unitTransferYearFilter, unitSizeFilter, units]);
 
   const filteredKpis = useMemo(() => {
     const keyword = kpiSearch.trim().toLowerCase();
@@ -475,16 +527,16 @@ export function SettingsDashboard() {
         }),
       });
 
-      const body = (await response.json()) as { error?: string; message?: string };
+      const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถสร้างผู้ใช้ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเนเธฒเธเธเธนเนเนเธเนเนเธ”เน");
       }
 
-      setMessage(body.message || "สร้างผู้ใช้เรียบร้อยแล้ว");
+      setMessage(body.message || "เธชเธฃเนเธฒเธเธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setCreateForm(emptyUserForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถสร้างผู้ใช้ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเนเธฒเธเธเธนเนเนเธเนเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -525,23 +577,23 @@ export function SettingsDashboard() {
         }),
       });
 
-      const body = (await response.json()) as { error?: string; message?: string };
+      const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเนเนเธ”เน");
       }
 
-      setMessage(body.message || "อัปเดตผู้ใช้เรียบร้อยแล้ว");
+      setMessage(body.message || "เธญเธฑเธเน€เธ”เธ•เธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setEditingUser(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเนเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteUser(user: UserItem) {
-    const confirmed = window.confirm(`ยืนยันการลบผู้ใช้ ${user.name} ?`);
+    const confirmed = window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธเธนเนเนเธเน ${user.name} ?`);
     if (!confirmed) {
       return;
     }
@@ -551,16 +603,16 @@ export function SettingsDashboard() {
 
     try {
       const response = await fetch(`/api/auth/users?id=${user.id}`, { method: "DELETE" });
-      const body = (await response.json()) as { error?: string; message?: string };
+      const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
 
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถลบผู้ใช้ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธนเนเนเธเนเนเธ”เน");
       }
 
-      setMessage(body.message || "ลบผู้ใช้เรียบร้อยแล้ว");
+      setMessage(body.message || "เธฅเธเธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบผู้ใช้ได้");
+      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธนเนเนเธเนเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -578,12 +630,28 @@ export function SettingsDashboard() {
       affiliation: unit.affiliation || "",
       email: unit.email || "",
       phone: unit.phone || "",
+      transferYear: unit.transferYear ? String(unit.transferYear) : "",
+      unitSize: unit.unitSize || "",
+      cupCode: unit.cupCode || "",
+      cupName: unit.cupName || "",
+      localAuthority: unit.localAuthority || "",
+      province: unit.province || "",
+      ucPopulation66: String(unit.ucPopulation66 ?? 0),
+      ucPopulation67: String(unit.ucPopulation67 ?? 0),
+      ucPopulation68: String(unit.ucPopulation68 ?? 0),
       male: "0",
       female: "0",
+      elderlyPopulation: "0",
       totalPopulation: "0",
       villages: "0",
       households: "0",
       healthVolunteers: "0",
+      templeCount: String(unit.templeCount ?? 0),
+      primarySchoolCount: String(unit.primarySchoolCount ?? 0),
+      opportunitySchoolCount: String(unit.opportunitySchoolCount ?? 0),
+      secondarySchoolCount: String(unit.secondarySchoolCount ?? 0),
+      childDevelopmentCenterCount: String(unit.childDevelopmentCenterCount ?? 0),
+      healthStationCount: String(unit.healthStationCount ?? 0),
       status: unit.status,
     };
 
@@ -600,6 +668,7 @@ export function SettingsDashboard() {
         ...baseForm,
         male: String(detail.demographics?.male ?? 0),
         female: String(detail.demographics?.female ?? 0),
+        elderlyPopulation: String(detail.demographics?.elderlyPopulation ?? 0),
         totalPopulation: String(detail.demographics?.totalPopulation ?? 0),
         villages: String(detail.demographics?.villages ?? 0),
         households: String(detail.demographics?.households ?? 0),
@@ -629,20 +698,57 @@ export function SettingsDashboard() {
           affiliation: createUnitForm.affiliation || undefined,
           email: createUnitForm.email || "",
           phone: createUnitForm.phone || undefined,
+          transferYear: createUnitForm.transferYear ? Number(createUnitForm.transferYear) : undefined,
+          unitSize: createUnitForm.unitSize || undefined,
+          cupCode: createUnitForm.cupCode || undefined,
+          cupName: createUnitForm.cupName || undefined,
+          localAuthority: createUnitForm.localAuthority || undefined,
+          province: createUnitForm.province || undefined,
+          ucPopulation66: Number(createUnitForm.ucPopulation66 || "0"),
+          ucPopulation67: Number(createUnitForm.ucPopulation67 || "0"),
+          ucPopulation68: Number(createUnitForm.ucPopulation68 || "0"),
+          templeCount: Number(createUnitForm.templeCount || "0"),
+          primarySchoolCount: Number(createUnitForm.primarySchoolCount || "0"),
+          opportunitySchoolCount: Number(createUnitForm.opportunitySchoolCount || "0"),
+          secondarySchoolCount: Number(createUnitForm.secondarySchoolCount || "0"),
+          childDevelopmentCenterCount: Number(createUnitForm.childDevelopmentCenterCount || "0"),
+          healthStationCount: Number(createUnitForm.healthStationCount || "0"),
         }),
       });
 
-      const body = (await response.json()) as { error?: string; message?: string };
+      const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถเพิ่มหน่วยบริการได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
       }
 
-      setMessage(body.message || "เพิ่มหน่วยบริการเรียบร้อยแล้ว");
+      setMessage(body.message || "เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      if (currentPeriod?.id && body.data?.id) {
+        const demographicsResponse = await fetch(`/api/health-units/${body.data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fiscalPeriodId: currentPeriod.id,
+            male: Number(createUnitForm.male || "0"),
+            female: Number(createUnitForm.female || "0"),
+            elderlyPopulation: Number(createUnitForm.elderlyPopulation || "0"),
+            totalPopulation: Number(createUnitForm.totalPopulation || "0"),
+            villages: Number(createUnitForm.villages || "0"),
+            households: Number(createUnitForm.households || "0"),
+            healthVolunteers: Number(createUnitForm.healthVolunteers || "0"),
+          }),
+        });
+
+        const demographicsBody = (await demographicsResponse.json()) as { error?: string };
+        if (!demographicsResponse.ok) {
+          throw new Error(demographicsBody.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธฃเธฐเธเธฒเธเธฃเน€เธฃเธดเนเธกเธ•เนเธเนเธ”เน");
+        }
+      }
+
       setCreateUnitForm(emptyUnitForm);
       setCreateSubdistricts([]);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มหน่วยบริการได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -671,13 +777,28 @@ export function SettingsDashboard() {
           affiliation: editUnitForm.affiliation || undefined,
           email: editUnitForm.email || "",
           phone: editUnitForm.phone || undefined,
+          transferYear: editUnitForm.transferYear ? Number(editUnitForm.transferYear) : undefined,
+          unitSize: editUnitForm.unitSize || undefined,
+          cupCode: editUnitForm.cupCode || undefined,
+          cupName: editUnitForm.cupName || undefined,
+          localAuthority: editUnitForm.localAuthority || undefined,
+          province: editUnitForm.province || undefined,
+          ucPopulation66: Number(editUnitForm.ucPopulation66 || "0"),
+          ucPopulation67: Number(editUnitForm.ucPopulation67 || "0"),
+          ucPopulation68: Number(editUnitForm.ucPopulation68 || "0"),
+          templeCount: Number(editUnitForm.templeCount || "0"),
+          primarySchoolCount: Number(editUnitForm.primarySchoolCount || "0"),
+          opportunitySchoolCount: Number(editUnitForm.opportunitySchoolCount || "0"),
+          secondarySchoolCount: Number(editUnitForm.secondarySchoolCount || "0"),
+          childDevelopmentCenterCount: Number(editUnitForm.childDevelopmentCenterCount || "0"),
+          healthStationCount: Number(editUnitForm.healthStationCount || "0"),
           status: editUnitForm.status,
         }),
       });
 
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถแก้ไขหน่วยบริการได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
       }
 
       if (currentPeriod?.id) {
@@ -688,6 +809,7 @@ export function SettingsDashboard() {
             fiscalPeriodId: currentPeriod.id,
             male: Number(editUnitForm.male || "0"),
             female: Number(editUnitForm.female || "0"),
+            elderlyPopulation: Number(editUnitForm.elderlyPopulation || "0"),
             totalPopulation: Number(editUnitForm.totalPopulation || "0"),
             villages: Number(editUnitForm.villages || "0"),
             households: Number(editUnitForm.households || "0"),
@@ -697,22 +819,22 @@ export function SettingsDashboard() {
 
         const demographicsBody = (await demographicsResponse.json()) as { error?: string };
         if (!demographicsResponse.ok) {
-          throw new Error(demographicsBody.error || "ไม่สามารถบันทึกข้อมูลประชากรได้");
+          throw new Error(demographicsBody.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธฃเธฐเธเธฒเธเธฃเนเธ”เน");
         }
       }
 
-      setMessage(body.message || "อัปเดตหน่วยบริการเรียบร้อยแล้ว");
+      setMessage(body.message || "เธญเธฑเธเน€เธ”เธ•เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setEditingUnit(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไขหน่วยบริการได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteUnit(unit: HealthUnitItem) {
-    const confirmed = window.confirm(`ยืนยันการลบหน่วยบริการ ${unit.name} ?`);
+    const confirmed = window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ ${unit.name} ?`);
     if (!confirmed) {
       return;
     }
@@ -725,16 +847,16 @@ export function SettingsDashboard() {
       const body = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถลบหน่วยบริการได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
       }
 
-      setMessage(body.message || "ลบหน่วยบริการเรียบร้อยแล้ว");
+      setMessage(body.message || "เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       if (editingUnit?.id === unit.id) {
         setEditingUnit(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหน่วยบริการได้");
+      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -753,20 +875,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถเพิ่มปีงบประมาณได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
       }
-      setMessage(body.message || "เพิ่มปีงบประมาณเรียบร้อยแล้ว");
+      setMessage(body.message || "เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setFiscalYearForm(emptyFiscalYearForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มปีงบประมาณได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteFiscalYear(fiscalYear: number) {
-    if (!window.confirm(`ยืนยันการลบปีงบประมาณ ${fiscalYear} ?`)) {
+    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“ ${fiscalYear} ?`)) {
       return;
     }
 
@@ -777,12 +899,12 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/fiscal-periods?fiscalYear=${fiscalYear}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถลบปีงบประมาณได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
       }
-      setMessage(body.message || "ลบปีงบประมาณเรียบร้อยแล้ว");
+      setMessage(body.message || "เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบปีงบประมาณได้");
+      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -815,13 +937,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถแก้ไขงวดปีงบประมาณได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
       }
-      setMessage(body.message || "บันทึกงวดปีงบประมาณเรียบร้อยแล้ว");
+      setMessage(body.message || "เธเธฑเธเธ—เธถเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setEditingPeriod(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไขงวดปีงบประมาณได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -850,13 +972,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถเพิ่ม KPI master ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธก KPI master เนเธ”เน");
       }
-      setMessage(body.message || "เพิ่ม KPI master เรียบร้อยแล้ว");
+      setMessage(body.message || "เน€เธเธดเนเธก KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setCreateKpiForm(emptyKpiForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่ม KPI master ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธก KPI master เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -881,13 +1003,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถเพิ่มหมวด KPI ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เนเธ”เน");
       }
-      setMessage(body.message || "เพิ่มหมวด KPI เรียบร้อยแล้ว");
+      setMessage(body.message || "เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setCreateKpiCategoryForm(emptyKpiCategoryForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มหมวด KPI ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -928,20 +1050,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถแก้ไขหมวด KPI ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธกเธงเธ” KPI เนเธ”เน");
       }
-      setMessage(body.message || "แก้ไขหมวด KPI เรียบร้อยแล้ว");
+      setMessage(body.message || "เนเธเนเนเธเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setEditingKpiCategory(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไขหมวด KPI ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธกเธงเธ” KPI เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteKpiCategory(item: KpiCategoryItem) {
-    if (!window.confirm(`ยืนยันการลบหมวด KPI ${getKpiCategoryLabel(item)} ?`)) {
+    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธซเธกเธงเธ” KPI ${getKpiCategoryLabel(item)} ?`)) {
       return;
     }
 
@@ -952,15 +1074,15 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/kpi-categories/${item.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถลบหมวด KPI ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธกเธงเธ” KPI เนเธ”เน");
       }
-      setMessage(body.message || "ลบหมวด KPI เรียบร้อยแล้ว");
+      setMessage(body.message || "เธฅเธเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       if (editingKpiCategory?.id === item.id) {
         setEditingKpiCategory(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหมวด KPI ได้");
+      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธกเธงเธ” KPI เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -1009,20 +1131,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถแก้ไข KPI master ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธ KPI master เนเธ”เน");
       }
-      setMessage(body.message || "แก้ไข KPI master เรียบร้อยแล้ว");
+      setMessage(body.message || "เนเธเนเนเธ KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       setEditingKpi(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไข KPI master ได้");
+      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธ KPI master เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteKpiDefinition(item: KpiDefinitionAdminItem) {
-    if (!window.confirm(`ยืนยันการลบ KPI ${item.code} ?`)) {
+    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธ KPI ${item.code} ?`)) {
       return;
     }
 
@@ -1033,15 +1155,15 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/kpi-definitions/${item.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "ไม่สามารถลบ KPI master ได้");
+        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธ KPI master เนเธ”เน");
       }
-      setMessage(body.message || "ลบ KPI master เรียบร้อยแล้ว");
+      setMessage(body.message || "เธฅเธ KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
       if (editingKpi?.id === item.id) {
         setEditingKpi(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบ KPI master ได้");
+      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธ KPI master เนเธ”เน");
     } finally {
       setIsSaving(false);
     }
@@ -1057,7 +1179,7 @@ export function SettingsDashboard() {
           </div>
           <h1 className="text-3xl font-bold">จัดการผู้ใช้และข้อมูลระบบ</h1>
           <p className="max-w-2xl text-sm text-primary-foreground/80">
-            หน้าเดียวสำหรับดูภาพรวมระบบ จัดการบัญชีผู้ใช้ และตรวจสอบข้อมูลหลักที่ใช้ในแดชบอร์ด
+            หน้าสำหรับดูภาพรวมระบบ จัดการบัญชีผู้ใช้ และตรวจสอบข้อมูลหลักที่ใช้ในแดชบอร์ด
           </p>
         </div>
         <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm">
@@ -1110,96 +1232,14 @@ export function SettingsDashboard() {
           <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เพิ่มหมวด KPI</CardTitle>
-                <CardDescription>จัดการหมวดเช่น PPFS และ แพทย์แผนไทย</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-4" onSubmit={handleCreateKpiCategory}>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="รหัสหมวด" value={createKpiCategoryForm.code} onChange={(value) => setCreateKpiCategoryForm((current) => ({ ...current, code: value }))} />
-                    <FormInput label="ลำดับ" value={createKpiCategoryForm.displayOrder} onChange={(value) => setCreateKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
-                  </div>
-                  <FormInput label="ชื่อหมวด" value={createKpiCategoryForm.nameTh} onChange={(value) => setCreateKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
-                  <FormInput label="ชื่ออังกฤษ" value={createKpiCategoryForm.nameEn} onChange={(value) => setCreateKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
-                  <FormSelect
-                    label="สถานะ"
-                    value={createKpiCategoryForm.isActive ? "active" : "inactive"}
-                    onChange={(value) => setCreateKpiCategoryForm((current) => ({ ...current, isActive: value === "active" }))}
-                    options={[
-                      { value: "active", label: "active" },
-                      { value: "inactive", label: "inactive" },
-                    ]}
-                  />
-                  <Button type="submit" className="w-full" disabled={isSaving || !createKpiCategoryForm.code || !createKpiCategoryForm.nameTh}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "กำลังบันทึก..." : "เพิ่มหมวด KPI"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">จัดการหมวด KPI</CardTitle>
-                <CardDescription>ลบไม่ได้หากยังมี KPI master ผูกอยู่</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">รหัส</th>
-                        <th className="pb-3 font-medium">ชื่อแสดงผล</th>
-                        <th className="pb-3 font-medium">ชื่อเต็ม</th>
-                        <th className="pb-3 font-medium">KPI</th>
-                        <th className="pb-3 font-medium">สถานะ</th>
-                        <th className="pb-3 font-medium text-right">จัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kpiCategories.map((item) => (
-                        <tr key={item.id} className="border-b last:border-b-0">
-                          <td className="py-4 font-medium">{item.code}</td>
-                          <td className="py-4">{getKpiCategoryLabel(item)}</td>
-                          <td className="py-4 text-muted-foreground">{item.nameTh}</td>
-                          <td className="py-4">{item._count?.definitions ?? 0}</td>
-                          <td className="py-4">
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${item.isActive ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
-                              {item.isActive ? "active" : "inactive"}
-                            </span>
-                          </td>
-                          <td className="py-4">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openEditKpiCategoryDialog(item)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                แก้ไข
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => void handleDeleteKpiCategory(item)} disabled={(item._count?.definitions ?? 0) > 0}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                ลบ
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">เพิ่มผู้ใช้ใหม่</CardTitle>
-                <CardDescription>สร้างบัญชีสำหรับผู้ดูแล ผู้จัดการ หรือเจ้าหน้าที่</CardDescription>
+                <CardTitle className="text-xl">เพิ่มผู้ใช้</CardTitle>
+                <CardDescription>สร้างบัญชีผู้ใช้ใหม่และกำหนดสิทธิ์การใช้งาน</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateUser}>
                   <FormInput label="ชื่อ - นามสกุล" value={createForm.name} onChange={(value) => setCreateForm((current) => ({ ...current, name: value }))} />
                   <FormInput label="อีเมล" type="email" value={createForm.email} onChange={(value) => setCreateForm((current) => ({ ...current, email: value }))} />
-                  <FormInput label="รหัสผ่าน" type="password" value={createForm.password} onChange={(value) => setCreateForm((current) => ({ ...current, password: value }))} placeholder="อย่างน้อย 8 ตัวอักษร" />
+                  <FormInput label="รหัสผ่าน" type="password" value={createForm.password} onChange={(value) => setCreateForm((current) => ({ ...current, password: value }))} />
                   <FormSelect
                     label="สิทธิ์การใช้งาน"
                     value={createForm.role}
@@ -1215,7 +1255,17 @@ export function SettingsDashboard() {
                       ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` })),
                     ]}
                   />
-                  <Button type="submit" className="w-full" disabled={isSaving}>
+                  <FormSelect
+                    label="สถานะ"
+                    value={createForm.isActive ? "active" : "inactive"}
+                    onChange={(value) => setCreateForm((current) => ({ ...current, isActive: value === "active" }))}
+                    options={[
+                      { value: "active", label: "ใช้งาน" },
+                      { value: "inactive", label: "ปิดใช้งาน" },
+                    ]}
+                  />
+                  <Button type="submit" className="w-full" disabled={isSaving || !createForm.name || !createForm.email || !createForm.password}>
+                    <Plus className="mr-2 h-4 w-4" />
                     {isSaving ? "กำลังบันทึก..." : "เพิ่มผู้ใช้"}
                   </Button>
                 </form>
@@ -1225,11 +1275,11 @@ export function SettingsDashboard() {
             <Card>
               <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <CardTitle className="text-xl">รายการผู้ใช้</CardTitle>
-                  <CardDescription>ค้นหา แก้ไข และลบผู้ใช้จากระบบ</CardDescription>
+                  <CardTitle className="text-xl">จัดการผู้ใช้</CardTitle>
+                  <CardDescription>แก้ไขสิทธิ์ ผูกหน่วยบริการ หรือปิดใช้งานบัญชีผู้ใช้</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาชื่อ อีเมล หรือหน่วยงาน" className="w-full md:w-72" />
+                  <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาชื่อ อีเมล หรือหน่วยบริการ" className="w-full md:w-72" />
                   <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
                     <RefreshCcw className="h-4 w-4" />
                   </Button>
@@ -1237,10 +1287,11 @@ export function SettingsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-sm">
+                  <table className="w-full min-w-[920px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">ชื่อผู้ใช้</th>
+                        <th className="pb-3 font-medium">ชื่อ</th>
+                        <th className="pb-3 font-medium">อีเมล</th>
                         <th className="pb-3 font-medium">สิทธิ์</th>
                         <th className="pb-3 font-medium">หน่วยบริการ</th>
                         <th className="pb-3 font-medium">สถานะ</th>
@@ -1250,16 +1301,16 @@ export function SettingsDashboard() {
                     <tbody>
                       {filteredUsers.map((user) => (
                         <tr key={user.id} className="border-b last:border-b-0">
-                          <td className="py-4">
-                            <div className="font-medium text-foreground">{user.name}</div>
-                            <div className="text-muted-foreground">{user.email}</div>
-                          </td>
+                          <td className="py-4 font-medium">{user.name}</td>
+                          <td className="py-4 text-muted-foreground">{user.email}</td>
                           <td className="py-4">
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
                               {roleLabels[user.role]}
                             </span>
                           </td>
-                          <td className="py-4 text-muted-foreground">{user.healthUnit?.name || "-"}</td>
+                          <td className="py-4 text-muted-foreground">
+                            {user.healthUnit ? `${user.healthUnit.code || ""} ${user.healthUnit.name}`.trim() : "-"}
+                          </td>
                           <td className="py-4">
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${user.isActive ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
                               {user.isActive ? "ใช้งาน" : "ปิดใช้งาน"}
@@ -1284,7 +1335,7 @@ export function SettingsDashboard() {
                 </div>
                 {!isLoading && filteredUsers.length === 0 ? (
                   <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                    ไม่พบข้อมูลผู้ใช้ตามคำค้นหา
+                    ไม่พบผู้ใช้ตามคำค้นหา
                   </div>
                 ) : null}
               </CardContent>
@@ -1294,134 +1345,128 @@ export function SettingsDashboard() {
 
         <TabsContent value="units" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <SummaryCard icon={Building2} label="หน่วยบริการทั้งหมด" value={formatNumber(units.length)} />
-            <SummaryCard icon={MapPinned} label="อำเภอที่มีข้อมูล" value={formatNumber(new Set(units.map((unit) => unit.amphoeId)).size)} />
-            <SummaryCard icon={Building2} label="หน่วยบริการ active" value={formatNumber(units.filter((unit) => unit.status === "active").length)} />
+            <SummaryCard icon={Building2} label="Health Units" value={formatNumber(units.length)} />
+            <SummaryCard icon={Users} label="UC68 Population" value={formatNumber(units.reduce((sum, unit) => sum + (unit.ucPopulation68 || 0), 0))} />
+            <SummaryCard icon={CalendarRange} label="Transfer Years" value={formatNumber(new Set(units.map((unit) => unit.transferYear).filter(Boolean)).size)} />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">เพิ่มหน่วยบริการ</CardTitle>
-                <CardDescription>สร้างหน่วยบริการใหม่สำหรับใช้งานในระบบ</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-4" onSubmit={handleCreateUnit}>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="รหัสหน่วยบริการ" value={createUnitForm.code} onChange={(value) => setCreateUnitForm((current) => ({ ...current, code: value }))} />
-                    <FormInput label="ชื่อย่อ" value={createUnitForm.shortName} onChange={(value) => setCreateUnitForm((current) => ({ ...current, shortName: value }))} />
-                  </div>
-                  <FormInput label="ชื่อหน่วยบริการ" value={createUnitForm.name} onChange={(value) => setCreateUnitForm((current) => ({ ...current, name: value }))} />
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormSelect
-                      label="อำเภอ"
-                      value={createUnitForm.amphoeId}
-                      onChange={(value) => setCreateUnitForm((current) => ({ ...current, amphoeId: value, tambonId: "" }))}
-                      options={[{ value: "", label: "เลือกอำเภอ" }, ...districts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
-                    />
-                    <FormSelect
-                      label="ตำบล"
-                      value={createUnitForm.tambonId}
-                      onChange={(value) => setCreateUnitForm((current) => ({ ...current, tambonId: value }))}
-                      options={[{ value: "", label: "ไม่ระบุ" }, ...createSubdistricts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
-                    />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="หมู่" value={createUnitForm.moo} onChange={(value) => setCreateUnitForm((current) => ({ ...current, moo: value }))} />
-                    <FormInput label="สังกัด" value={createUnitForm.affiliation} onChange={(value) => setCreateUnitForm((current) => ({ ...current, affiliation: value }))} />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="อีเมล" type="email" value={createUnitForm.email} onChange={(value) => setCreateUnitForm((current) => ({ ...current, email: value }))} />
-                    <FormInput label="โทรศัพท์" value={createUnitForm.phone} onChange={(value) => setCreateUnitForm((current) => ({ ...current, phone: value }))} />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isSaving || !createUnitForm.code || !createUnitForm.name || !createUnitForm.amphoeId}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "กำลังบันทึก..." : "เพิ่มหน่วยบริการ"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardTitle className="text-xl">จัดการหน่วยบริการ</CardTitle>
-                  <CardDescription>เพิ่ม ลบ และแก้ไขข้อมูลหน่วยบริการในระบบ</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Input value={unitSearch} onChange={(event) => setUnitSearch(event.target.value)} placeholder="ค้นหารหัส ชื่อ อำเภอ หรือตำบล" className="w-full md:w-72" />
-                  <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
-                    <RefreshCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[980px] text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">รหัส</th>
-                        <th className="pb-3 font-medium">ชื่อหน่วยบริการ</th>
-                        <th className="pb-3 font-medium">อำเภอ / ตำบล</th>
-                        <th className="pb-3 font-medium">ติดต่อ</th>
-                        <th className="pb-3 font-medium">สถานะ</th>
-                        <th className="pb-3 font-medium text-right">จัดการ</th>
+          <Card>
+            <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="text-xl">Manage Health Units</CardTitle>
+                <CardDescription>Search, filter, edit, and remove health units imported into the system.</CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  value={unitSearch}
+                  onChange={(event) => setUnitSearch(event.target.value)}
+                  placeholder="Search code, name, district, subdistrict"
+                  className="w-full md:w-72"
+                />
+                <Input
+                  value={unitTransferYearFilter}
+                  onChange={(event) => setUnitTransferYearFilter(event.target.value)}
+                  placeholder="Transfer year"
+                  className="w-32"
+                />
+                <select
+                  value={unitSizeFilter}
+                  onChange={(event) => setUnitSizeFilter(event.target.value)}
+                  className="flex h-10 w-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="all">All Size</option>
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                </select>
+                <Button variant="outline" onClick={() => void loadData()} disabled={isLoading}>
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1280px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="pb-3 font-medium">Code</th>
+                      <th className="pb-3 font-medium">Health Unit</th>
+                      <th className="pb-3 font-medium">Area</th>
+                      <th className="pb-3 font-medium">Transfer</th>
+                      <th className="pb-3 font-medium">UC</th>
+                      <th className="pb-3 font-medium">Contact</th>
+                      <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUnits.map((unit) => (
+                      <tr key={unit.id} className="border-b last:border-b-0">
+                        <td className="py-4 font-medium">{unit.code}</td>
+                        <td className="py-4">
+                          <div className="font-medium text-foreground">{unit.name}</div>
+                          <div className="text-muted-foreground">{unit.shortName || "-"}</div>
+                        </td>
+                        <td className="py-4 text-muted-foreground">
+                          <div>{unit.amphoeName}</div>
+                          <div>{unit.tambonName || "-"}</div>
+                        </td>
+                        <td className="py-4 text-muted-foreground">
+                          <div>Year {unit.transferYear || "-"}</div>
+                          <div>Size {unit.unitSize || "-"}</div>
+                          <div>{unit.cupName || "-"}</div>
+                        </td>
+                        <td className="py-4 text-muted-foreground">
+                          <div>UC66 {formatNumber(unit.ucPopulation66 || 0)}</div>
+                          <div>UC67 {formatNumber(unit.ucPopulation67 || 0)}</div>
+                          <div>UC68 {formatNumber(unit.ucPopulation68 || 0)}</div>
+                        </td>
+                        <td className="py-4 text-muted-foreground">
+                          <div>{unit.phone || "-"}</div>
+                          <div>{unit.localAuthority || unit.email || "-"}</div>
+                        </td>
+                        <td className="py-4">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(unit.status)}`}>
+                            {unit.status === "active" ? "active" : "inactive"}
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openEditUnitDialog(unit)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => void handleDeleteUnit(unit)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUnits.map((unit) => (
-                        <tr key={unit.id} className="border-b last:border-b-0">
-                          <td className="py-4 font-medium">{unit.code}</td>
-                          <td className="py-4">
-                            <div className="font-medium text-foreground">{unit.name}</div>
-                            <div className="text-muted-foreground">{unit.shortName || "-"}</div>
-                          </td>
-                          <td className="py-4 text-muted-foreground">
-                            <div>{unit.amphoeName}</div>
-                            <div>{unit.tambonName || "-"}</div>
-                          </td>
-                          <td className="py-4 text-muted-foreground">
-                            <div>{unit.phone || "-"}</div>
-                            <div>{unit.email || "-"}</div>
-                          </td>
-                          <td className="py-4">
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(unit.status)}`}>
-                              {unit.status === "active" ? "active" : "inactive"}
-                            </span>
-                          </td>
-                          <td className="py-4">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openEditUnitDialog(unit)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                แก้ไข
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => void handleDeleteUnit(unit)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                ลบ
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!isLoading && filteredUnits.length === 0 ? (
+                <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+                  No health units matched the current filters.
                 </div>
-                {!isLoading && filteredUnits.length === 0 ? (
-                  <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                    ไม่พบข้อมูลหน่วยบริการตามคำค้นหา
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          </div>
+              ) : null}
+            </CardContent>
+          </Card>
         </TabsContent>
-
         <TabsContent value="data" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
             <SummaryCard icon={Building2} label="หน่วยบริการ" value={formatNumber(stats?.totalUnits)} />
             <SummaryCard icon={Users} label="ประชากรทั้งหมด" value={formatNumber(stats?.totalPopulation)} />
             <SummaryCard icon={Building2} label="หมู่บ้าน" value={formatNumber(stats?.totalVillages)} />
             <SummaryCard icon={CalendarRange} label="ปีงบประมาณ" value={formatNumber(years.length)} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <SummaryCard icon={Users} label="ประชากร UC68" value={formatNumber(units.reduce((sum, unit) => sum + (unit.ucPopulation68 || 0), 0))} />
+            <SummaryCard icon={CalendarRange} label="จำนวนปีที่โอน" value={formatNumber(new Set(units.map((unit) => unit.transferYear).filter(Boolean)).size)} />
+            <SummaryCard icon={Building2} label="จำนวน CUP" value={formatNumber(new Set(units.map((unit) => unit.cupCode).filter(Boolean)).size)} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
@@ -1444,21 +1489,35 @@ export function SettingsDashboard() {
                   <CardTitle className="text-xl">หน่วยบริการในระบบ</CardTitle>
                   <CardDescription>รายการหน่วยบริการที่ดึงได้จากฐานข้อมูลปัจจุบัน</CardDescription>
                 </div>
-                <Button variant="outline" onClick={() => void loadData()} disabled={isLoading}>
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  โหลดใหม่
-                </Button>
+                <div className="flex gap-2">
+                  <Input value={unitSearch} onChange={(event) => setUnitSearch(event.target.value)} placeholder="ค้นหาหน่วยบริการหรือรหัส" className="w-full md:w-60" />
+                  <Input value={unitTransferYearFilter} onChange={(event) => setUnitTransferYearFilter(event.target.value)} placeholder="ปีโอน" className="w-28" />
+                  <select
+                    value={unitSizeFilter}
+                    onChange={(event) => setUnitSizeFilter(event.target.value)}
+                    className="flex h-10 w-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">ทุก Size</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                  </select>
+                  <Button variant="outline" onClick={() => void loadData()} disabled={isLoading}>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    รีเฟรช
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {units.slice(0, 8).map((unit) => (
+                  {filteredUnits.slice(0, 8).map((unit) => (
                     <div key={unit.id} className="flex items-center justify-between rounded-xl border px-4 py-3">
                       <div>
                         <p className="font-medium">{unit.name}</p>
                         <p className="text-sm text-muted-foreground">{unit.code}</p>
                       </div>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${unit.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
-                        {unit.status === "active" ? "active" : "inactive"}
+                        {unit.status === "active" ? "ใช้งาน" : "ปิดใช้งาน"}
                       </span>
                     </div>
                   ))}
@@ -1470,20 +1529,20 @@ export function SettingsDashboard() {
           <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เพิ่มปีงบประมาณ</CardTitle>
-                <CardDescription>ระบบจะสร้าง 12 งวดอัตโนมัติสำหรับปีงบประมาณที่ระบุ</CardDescription>
+                <CardTitle className="text-xl">เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</CardTitle>
+                <CardDescription>เธฃเธฐเธเธเธเธฐเธชเธฃเนเธฒเธ 12 เธเธงเธ”เธญเธฑเธ•เนเธเธกเธฑเธ•เธดเธชเธณเธซเธฃเธฑเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เธ—เธตเนเธฃเธฐเธเธธ</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateFiscalYear}>
                   <FormInput
-                    label="ปีงบประมาณ"
+                    label="เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"
                     value={fiscalYearForm.fiscalYear}
                     onChange={(value) => setFiscalYearForm({ fiscalYear: value })}
-                    placeholder="เช่น 2568"
+                    placeholder="เน€เธเนเธ 2568"
                   />
                   <Button type="submit" className="w-full" disabled={isSaving || !fiscalYearForm.fiscalYear}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "กำลังบันทึก..." : "เพิ่มปีงบประมาณ"}
+                    {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"}
                   </Button>
                 </form>
               </CardContent>
@@ -1491,19 +1550,19 @@ export function SettingsDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">จัดการปีงบประมาณ</CardTitle>
-                <CardDescription>ลบได้เฉพาะปีที่ยังไม่มีข้อมูล KPI การเงิน หรือประชากรผูกอยู่</CardDescription>
+                <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</CardTitle>
+                <CardDescription>เธฅเธเนเธ”เนเน€เธเธเธฒเธฐเธเธตเธ—เธตเนเธขเธฑเธเนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ KPI เธเธฒเธฃเน€เธเธดเธ เธซเธฃเธทเธญเธเธฃเธฐเธเธฒเธเธฃเธเธนเธเธญเธขเธนเน</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[820px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">ปีงบประมาณ</th>
-                        <th className="pb-3 font-medium">จำนวนงวด</th>
-                        <th className="pb-3 font-medium">ปิดงวดแล้ว</th>
-                        <th className="pb-3 font-medium">ข้อมูลที่ผูก</th>
-                        <th className="pb-3 font-medium text-right">จัดการ</th>
+                        <th className="pb-3 font-medium">เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</th>
+                        <th className="pb-3 font-medium">เธเธณเธเธงเธเธเธงเธ”</th>
+                        <th className="pb-3 font-medium">เธเธดเธ”เธเธงเธ”เนเธฅเนเธง</th>
+                        <th className="pb-3 font-medium">เธเนเธญเธกเธนเธฅเธ—เธตเนเธเธนเธ</th>
+                        <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1513,7 +1572,7 @@ export function SettingsDashboard() {
                           <td className="py-4">{item.periodCount}</td>
                           <td className="py-4">{item.closedCount}</td>
                           <td className="py-4 text-muted-foreground">
-                            KPI {item.totalKpiResults} / การเงิน {item.totalFinanceRecords} / ประชากร {item.totalDemographics}
+                            KPI {item.totalKpiResults} / เธเธฒเธฃเน€เธเธดเธ {item.totalFinanceRecords} / เธเธฃเธฐเธเธฒเธเธฃ {item.totalDemographics}
                           </td>
                           <td className="py-4">
                             <div className="flex justify-end gap-2">
@@ -1524,7 +1583,7 @@ export function SettingsDashboard() {
                                 disabled={item.hasUsage}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                ลบ
+                                เธฅเธ
                               </Button>
                             </div>
                           </td>
@@ -1537,13 +1596,13 @@ export function SettingsDashboard() {
                   <table className="w-full min-w-[900px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">ปี</th>
-                        <th className="pb-3 font-medium">ไตรมาส</th>
-                        <th className="pb-3 font-medium">เดือน</th>
-                        <th className="pb-3 font-medium">เริ่มต้น</th>
-                        <th className="pb-3 font-medium">สิ้นสุด</th>
-                        <th className="pb-3 font-medium">สถานะ</th>
-                        <th className="pb-3 font-medium text-right">จัดการ</th>
+                        <th className="pb-3 font-medium">เธเธต</th>
+                        <th className="pb-3 font-medium">เนเธ•เธฃเธกเธฒเธช</th>
+                        <th className="pb-3 font-medium">เน€เธ”เธทเธญเธ</th>
+                        <th className="pb-3 font-medium">เน€เธฃเธดเนเธกเธ•เนเธ</th>
+                        <th className="pb-3 font-medium">เธชเธดเนเธเธชเธธเธ”</th>
+                        <th className="pb-3 font-medium">เธชเธ–เธฒเธเธฐ</th>
+                        <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1556,14 +1615,14 @@ export function SettingsDashboard() {
                           <td className="py-4 text-muted-foreground">{period.endDate ? new Date(period.endDate).toLocaleDateString("th-TH") : "-"}</td>
                           <td className="py-4">
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${period.isClosed ? "bg-slate-200 text-slate-600" : "bg-green-100 text-green-700"}`}>
-                              {period.isClosed ? "ปิดงวด" : "เปิดงวด"}
+                              {period.isClosed ? "เธเธดเธ”เธเธงเธ”" : "เน€เธเธดเธ”เธเธงเธ”"}
                             </span>
                           </td>
                           <td className="py-4">
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="sm" onClick={() => openEditPeriodDialog(period)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                แก้ไข
+                                เนเธเนเนเธ
                               </Button>
                             </div>
                           </td>
@@ -1579,26 +1638,26 @@ export function SettingsDashboard() {
           <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เพิ่ม KPI Master</CardTitle>
-                <CardDescription>สร้างตัวชี้วัดหลักใหม่สำหรับใช้งานในระบบ</CardDescription>
+                <CardTitle className="text-xl">เน€เธเธดเนเธก KPI Master</CardTitle>
+                <CardDescription>เธชเธฃเนเธฒเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ”เธซเธฅเธฑเธเนเธซเธกเนเธชเธณเธซเธฃเธฑเธเนเธเนเธเธฒเธเนเธเธฃเธฐเธเธ</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateKpiDefinition}>
                   <FormSelect
-                    label="หมวด KPI"
+                    label="เธซเธกเธงเธ” KPI"
                     value={createKpiForm.categoryId}
                     onChange={(value) => setCreateKpiForm((current) => ({ ...current, categoryId: value }))}
-                    options={[{ value: "", label: "เลือกหมวด" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
+                    options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
                   />
                   <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="รหัส KPI" value={createKpiForm.code} onChange={(value) => setCreateKpiForm((current) => ({ ...current, code: value }))} />
-                    <FormInput label="หน่วยนับ" value={createKpiForm.unit} onChange={(value) => setCreateKpiForm((current) => ({ ...current, unit: value }))} />
+                    <FormInput label="เธฃเธซเธฑเธช KPI" value={createKpiForm.code} onChange={(value) => setCreateKpiForm((current) => ({ ...current, code: value }))} />
+                    <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={createKpiForm.unit} onChange={(value) => setCreateKpiForm((current) => ({ ...current, unit: value }))} />
                   </div>
-                  <FormInput label="ชื่อ KPI" value={createKpiForm.nameTh} onChange={(value) => setCreateKpiForm((current) => ({ ...current, nameTh: value }))} />
+                  <FormInput label="เธเธทเนเธญ KPI" value={createKpiForm.nameTh} onChange={(value) => setCreateKpiForm((current) => ({ ...current, nameTh: value }))} />
                   <div className="grid gap-4 md:grid-cols-3">
-                    <FormInput label="ค่าเป้าหมาย" value={createKpiForm.targetValue} onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetValue: value }))} />
+                    <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={createKpiForm.targetValue} onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetValue: value }))} />
                     <FormSelect
-                      label="ประเภทเป้าหมาย"
+                      label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
                       value={createKpiForm.targetType}
                       onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
                       options={[
@@ -1607,11 +1666,11 @@ export function SettingsDashboard() {
                         { value: "exact", label: "exact" },
                       ]}
                     />
-                    <FormInput label="ลำดับ" value={createKpiForm.displayOrder} onChange={(value) => setCreateKpiForm((current) => ({ ...current, displayOrder: value }))} />
+                    <FormInput label="เธฅเธณเธ”เธฑเธ" value={createKpiForm.displayOrder} onChange={(value) => setCreateKpiForm((current) => ({ ...current, displayOrder: value }))} />
                   </div>
                   <Button type="submit" className="w-full" disabled={isSaving || !createKpiForm.categoryId || !createKpiForm.code || !createKpiForm.nameTh}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "กำลังบันทึก..." : "เพิ่ม KPI Master"}
+                    {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เน€เธเธดเนเธก KPI Master"}
                   </Button>
                 </form>
               </CardContent>
@@ -1620,11 +1679,11 @@ export function SettingsDashboard() {
             <Card>
               <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <CardTitle className="text-xl">จัดการ KPI Master</CardTitle>
-                  <CardDescription>แก้ไขและลบตัวชี้วัด โดยจะลบไม่ได้หากมีผลลัพธ์ KPI ผูกอยู่</CardDescription>
+                  <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃ KPI Master</CardTitle>
+                  <CardDescription>เนเธเนเนเธเนเธฅเธฐเธฅเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ” เนเธ”เธขเธเธฐเธฅเธเนเธกเนเนเธ”เนเธซเธฒเธเธกเธตเธเธฅเธฅเธฑเธเธเน KPI เธเธนเธเธญเธขเธนเน</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="ค้นหารหัส KPI ชื่อ หรือหมวด" className="w-full md:w-72" />
+                  <Input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="เธเนเธเธซเธฒเธฃเธซเธฑเธช KPI เธเธทเนเธญ เธซเธฃเธทเธญเธซเธกเธงเธ”" className="w-full md:w-72" />
                   <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
                     <RefreshCcw className="h-4 w-4" />
                   </Button>
@@ -1635,12 +1694,12 @@ export function SettingsDashboard() {
                   <table className="w-full min-w-[980px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">รหัส</th>
-                        <th className="pb-3 font-medium">ชื่อ KPI</th>
-                        <th className="pb-3 font-medium">หมวด</th>
-                        <th className="pb-3 font-medium">เป้าหมาย</th>
-                        <th className="pb-3 font-medium">ผลลัพธ์ที่ผูก</th>
-                        <th className="pb-3 font-medium text-right">จัดการ</th>
+                        <th className="pb-3 font-medium">เธฃเธซเธฑเธช</th>
+                        <th className="pb-3 font-medium">เธเธทเนเธญ KPI</th>
+                        <th className="pb-3 font-medium">เธซเธกเธงเธ”</th>
+                        <th className="pb-3 font-medium">เน€เธเนเธฒเธซเธกเธฒเธข</th>
+                        <th className="pb-3 font-medium">เธเธฅเธฅเธฑเธเธเนเธ—เธตเนเธเธนเธ</th>
+                        <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1660,11 +1719,11 @@ export function SettingsDashboard() {
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="sm" onClick={() => openEditKpiDialog(item)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                แก้ไข
+                                เนเธเนเนเธ
                               </Button>
                               <Button variant="outline" size="sm" onClick={() => void handleDeleteKpiDefinition(item)} disabled={item._count.results > 0}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                ลบ
+                                เธฅเธ
                               </Button>
                             </div>
                           </td>
@@ -1690,42 +1749,42 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingUser)} onOpenChange={(open) => (!open ? setEditingUser(null) : null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>แก้ไขข้อมูลผู้ใช้</DialogTitle>
-            <DialogDescription>อัปเดตชื่อ สิทธิ์ หน่วยบริการ และสถานะการใช้งาน</DialogDescription>
+            <DialogTitle>เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเน</DialogTitle>
+            <DialogDescription>เธญเธฑเธเน€เธ”เธ•เธเธทเนเธญ เธชเธดเธ—เธเธดเน เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdateUser}>
-            <FormInput label="ชื่อ - นามสกุล" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
-            <FormInput label="อีเมล" value={editForm.email} onChange={() => undefined} disabled />
+            <FormInput label="เธเธทเนเธญ - เธเธฒเธกเธชเธเธธเธฅ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
+            <FormInput label="เธญเธตเน€เธกเธฅ" value={editForm.email} onChange={() => undefined} disabled />
             <FormSelect
-              label="สิทธิ์การใช้งาน"
+              label="เธชเธดเธ—เธเธดเนเธเธฒเธฃเนเธเนเธเธฒเธ"
               value={editForm.role}
               onChange={(value) => setEditForm((current) => ({ ...current, role: value as UserItem["role"] }))}
               options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
             />
             <FormSelect
-              label="หน่วยบริการ"
+              label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ"
               value={editForm.healthUnitId}
               onChange={(value) => setEditForm((current) => ({ ...current, healthUnitId: value }))}
               options={[
-                { value: "", label: "ไม่ผูกหน่วยบริการ" },
+                { value: "", label: "เนเธกเนเธเธนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ" },
                 ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` })),
               ]}
             />
             <FormSelect
-              label="สถานะ"
+              label="เธชเธ–เธฒเธเธฐ"
               value={editForm.isActive ? "active" : "inactive"}
               onChange={(value) => setEditForm((current) => ({ ...current, isActive: value === "active" }))}
               options={[
-                { value: "active", label: "ใช้งาน" },
-                { value: "inactive", label: "ปิดใช้งาน" },
+                { value: "active", label: "เนเธเนเธเธฒเธ" },
+                { value: "inactive", label: "เธเธดเธ”เนเธเนเธเธฒเธ" },
               ]}
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                ยกเลิก
+                เธขเธเน€เธฅเธดเธ
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
+                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธฒเธฃเน€เธเธฅเธตเนเธขเธเนเธเธฅเธ"}
               </Button>
             </DialogFooter>
           </form>
@@ -1765,8 +1824,8 @@ export function SettingsDashboard() {
                 value={editUnitForm.status}
                 onChange={(value) => setEditUnitForm((current) => ({ ...current, status: value as "active" | "inactive" }))}
                 options={[
-                  { value: "active", label: "active" },
-                  { value: "inactive", label: "inactive" },
+                  { value: "active", label: "ใช้งาน" },
+                  { value: "inactive", label: "ปิดใช้งาน" },
                 ]}
               />
             </div>
@@ -1774,6 +1833,23 @@ export function SettingsDashboard() {
             <div className="grid gap-4 md:grid-cols-2">
               <FormInput label="อีเมล" type="email" value={editUnitForm.email} onChange={(value) => setEditUnitForm((current) => ({ ...current, email: value }))} />
               <FormInput label="โทรศัพท์" value={editUnitForm.phone} onChange={(value) => setEditUnitForm((current) => ({ ...current, phone: value }))} />
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="mb-3">
+                <p className="text-sm font-medium">ข้อมูลถ่ายโอน</p>
+                <p className="text-xs text-muted-foreground">แก้ไขปีโอน ขนาดหน่วยบริการ CUP และประชากร UC</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="ปีโอน" value={editUnitForm.transferYear} onChange={(value) => setEditUnitForm((current) => ({ ...current, transferYear: value }))} />
+                <FormInput label="Size" value={editUnitForm.unitSize} onChange={(value) => setEditUnitForm((current) => ({ ...current, unitSize: value }))} />
+                <FormInput label="รหัส CUP" value={editUnitForm.cupCode} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupCode: value }))} />
+                <FormInput label="ชื่อ CUP" value={editUnitForm.cupName} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupName: value }))} />
+                <FormInput label="สังกัด อปท." value={editUnitForm.localAuthority} onChange={(value) => setEditUnitForm((current) => ({ ...current, localAuthority: value }))} />
+                <FormInput label="จังหวัด" value={editUnitForm.province} onChange={(value) => setEditUnitForm((current) => ({ ...current, province: value }))} />
+                <FormInput label="ปชก.UC66" value={editUnitForm.ucPopulation66} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation66: value }))} />
+                <FormInput label="ปชก.UC67" value={editUnitForm.ucPopulation67} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation67: value }))} />
+                <FormInput label="ปชก.UC68" value={editUnitForm.ucPopulation68} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation68: value }))} />
+              </div>
             </div>
             <div className="rounded-xl border bg-muted/20 p-4">
               <div className="mb-3">
@@ -1787,8 +1863,15 @@ export function SettingsDashboard() {
                 <FormInput label="อสม." value={editUnitForm.healthVolunteers} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthVolunteers: value }))} />
                 <FormInput label="ชาย" value={editUnitForm.male} onChange={(value) => setEditUnitForm((current) => ({ ...current, male: value }))} />
                 <FormInput label="หญิง" value={editUnitForm.female} onChange={(value) => setEditUnitForm((current) => ({ ...current, female: value }))} />
+                <FormInput label="ผู้สูงอายุ" value={editUnitForm.elderlyPopulation} onChange={(value) => setEditUnitForm((current) => ({ ...current, elderlyPopulation: value }))} />
                 <FormInput label="หมู่บ้าน" value={editUnitForm.villages} onChange={(value) => setEditUnitForm((current) => ({ ...current, villages: value }))} />
                 <FormInput label="หลังคาเรือน" value={editUnitForm.households} onChange={(value) => setEditUnitForm((current) => ({ ...current, households: value }))} />
+                <FormInput label="วัด/สำนักสงฆ์" value={editUnitForm.templeCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, templeCount: value }))} />
+                <FormInput label="โรงเรียนประถม" value={editUnitForm.primarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, primarySchoolCount: value }))} />
+                <FormInput label="โรงเรียนขยายโอกาส" value={editUnitForm.opportunitySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, opportunitySchoolCount: value }))} />
+                <FormInput label="โรงเรียนมัธยม" value={editUnitForm.secondarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, secondarySchoolCount: value }))} />
+                <FormInput label="ศูนย์พัฒนาเด็กเล็ก" value={editUnitForm.childDevelopmentCenterCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, childDevelopmentCenterCount: value }))} />
+                <FormInput label="สถานีสุขภาพ" value={editUnitForm.healthStationCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthStationCount: value }))} />
               </div>
             </div>
             <DialogFooter>
@@ -1806,44 +1889,44 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingPeriod)} onOpenChange={(open) => (!open ? setEditingPeriod(null) : null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>แก้ไขงวดปีงบประมาณ</DialogTitle>
-            <DialogDescription>ปรับชื่อเดือน วันที่เริ่มต้น สิ้นสุด และสถานะการปิดงวด</DialogDescription>
+            <DialogTitle>เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</DialogTitle>
+            <DialogDescription>เธเธฃเธฑเธเธเธทเนเธญเน€เธ”เธทเธญเธ เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ เธชเธดเนเธเธชเธธเธ” เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเธเธดเธ”เธเธงเธ”</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdatePeriod}>
             <FormInput
-              label="ชื่อเดือน"
+              label="เธเธทเนเธญเน€เธ”เธทเธญเธ"
               value={editingPeriod?.monthNameTh || ""}
               onChange={(value) => setEditingPeriod((current) => (current ? { ...current, monthNameTh: value } : current))}
             />
             <div className="grid gap-4 md:grid-cols-2">
               <FormInput
-                label="วันที่เริ่มต้น"
+                label="เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ"
                 type="date"
                 value={editingPeriod?.startDate ? new Date(editingPeriod.startDate).toISOString().slice(0, 10) : ""}
                 onChange={(value) => setEditingPeriod((current) => (current ? { ...current, startDate: value } : current))}
               />
               <FormInput
-                label="วันที่สิ้นสุด"
+                label="เธงเธฑเธเธ—เธตเนเธชเธดเนเธเธชเธธเธ”"
                 type="date"
                 value={editingPeriod?.endDate ? new Date(editingPeriod.endDate).toISOString().slice(0, 10) : ""}
                 onChange={(value) => setEditingPeriod((current) => (current ? { ...current, endDate: value } : current))}
               />
             </div>
             <FormSelect
-              label="สถานะงวด"
+              label="เธชเธ–เธฒเธเธฐเธเธงเธ”"
               value={editingPeriod?.isClosed ? "closed" : "open"}
               onChange={(value) => setEditingPeriod((current) => (current ? { ...current, isClosed: value === "closed" } : current))}
               options={[
-                { value: "open", label: "เปิดงวด" },
-                { value: "closed", label: "ปิดงวด" },
+                { value: "open", label: "เน€เธเธดเธ”เธเธงเธ”" },
+                { value: "closed", label: "เธเธดเธ”เธเธงเธ”" },
               ]}
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingPeriod(null)}>
-                ยกเลิก
+                เธขเธเน€เธฅเธดเธ
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกงวดปีงบประมาณ"}
+                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"}
               </Button>
             </DialogFooter>
           </form>
@@ -1853,25 +1936,25 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingKpi)} onOpenChange={(open) => (!open ? setEditingKpi(null) : null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>แก้ไข KPI Master</DialogTitle>
-            <DialogDescription>ปรับรหัส ชื่อ หมวด เป้าหมาย และสถานะของตัวชี้วัด</DialogDescription>
+            <DialogTitle>เนเธเนเนเธ KPI Master</DialogTitle>
+            <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญ เธซเธกเธงเธ” เน€เธเนเธฒเธซเธกเธฒเธข เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธญเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ”</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdateKpiDefinition}>
             <FormSelect
-              label="หมวด KPI"
+              label="เธซเธกเธงเธ” KPI"
               value={editKpiForm.categoryId}
               onChange={(value) => setEditKpiForm((current) => ({ ...current, categoryId: value }))}
-              options={[{ value: "", label: "เลือกหมวด" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
+              options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
             />
             <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="รหัส KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
-              <FormInput label="หน่วยนับ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
+              <FormInput label="เธฃเธซเธฑเธช KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
+              <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
             </div>
-            <FormInput label="ชื่อ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
+            <FormInput label="เธเธทเนเธญ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
             <div className="grid gap-4 md:grid-cols-3">
-              <FormInput label="ค่าเป้าหมาย" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
+              <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
               <FormSelect
-                label="ประเภทเป้าหมาย"
+                label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
                 value={editKpiForm.targetType}
                 onChange={(value) => setEditKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
                 options={[
@@ -1880,10 +1963,10 @@ export function SettingsDashboard() {
                   { value: "exact", label: "exact" },
                 ]}
               />
-              <FormInput label="ลำดับ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
+              <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
             </div>
             <FormSelect
-              label="สถานะ"
+              label="เธชเธ–เธฒเธเธฐ"
               value={editKpiForm.isActive ? "active" : "inactive"}
               onChange={(value) => setEditKpiForm((current) => ({ ...current, isActive: value === "active" }))}
               options={[
@@ -1893,10 +1976,10 @@ export function SettingsDashboard() {
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingKpi(null)}>
-                ยกเลิก
+                เธขเธเน€เธฅเธดเธ
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึก KPI Master"}
+                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธ KPI Master"}
               </Button>
             </DialogFooter>
           </form>
@@ -1906,18 +1989,18 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingKpiCategory)} onOpenChange={(open) => (!open ? setEditingKpiCategory(null) : null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>แก้ไขหมวด KPI</DialogTitle>
-            <DialogDescription>ปรับรหัส ชื่อหมวด ลำดับ และสถานะการใช้งาน</DialogDescription>
+            <DialogTitle>เนเธเนเนเธเธซเธกเธงเธ” KPI</DialogTitle>
+            <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญเธซเธกเธงเธ” เธฅเธณเธ”เธฑเธ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdateKpiCategory}>
             <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="รหัสหมวด" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
-              <FormInput label="ลำดับ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
+              <FormInput label="เธฃเธซเธฑเธชเธซเธกเธงเธ”" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
+              <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
             </div>
-            <FormInput label="ชื่อหมวด" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
-            <FormInput label="ชื่ออังกฤษ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
+            <FormInput label="เธเธทเนเธญเธซเธกเธงเธ”" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
+            <FormInput label="เธเธทเนเธญเธญเธฑเธเธเธคเธฉ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
             <FormSelect
-              label="สถานะ"
+              label="เธชเธ–เธฒเธเธฐ"
               value={editKpiCategoryForm.isActive ? "active" : "inactive"}
               onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, isActive: value === "active" }))}
               options={[
@@ -1927,10 +2010,10 @@ export function SettingsDashboard() {
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingKpiCategory(null)}>
-                ยกเลิก
+                เธขเธเน€เธฅเธดเธ
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกหมวด KPI"}
+                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธซเธกเธงเธ” KPI"}
               </Button>
             </DialogFooter>
           </form>

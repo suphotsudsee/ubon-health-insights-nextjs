@@ -175,6 +175,21 @@ export interface HealthUnitWithRelations {
   affiliation: string | null
   email: string | null
   phone: string | null
+  transferYear: number | null
+  unitSize: string | null
+  cupCode: string | null
+  cupName: string | null
+  localAuthority: string | null
+  province: string | null
+  ucPopulation66: number | null
+  ucPopulation67: number | null
+  ucPopulation68: number | null
+  templeCount: number
+  primarySchoolCount: number
+  opportunitySchoolCount: number
+  secondarySchoolCount: number
+  childDevelopmentCenterCount: number
+  healthStationCount: number
   status: 'active' | 'inactive'
   createdAt: Date
   updatedAt: Date
@@ -185,6 +200,7 @@ export interface HealthUnitWithDemographics extends HealthUnitWithRelations {
     totalPopulation: number | null
     male: number | null
     female: number | null
+    elderlyPopulation: number | null
     villages: number | null
     households: number | null
     healthVolunteers: number | null

@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx -r dotenv/config prisma/seed.ts && tsx -r dotenv/config scripts/seed-demo-data.ts",
     "db:import:finance": "tsx -r dotenv/config scripts/import-finance-xlsx.ts",
+    "db:import:transfer": "tsx -r dotenv/config scripts/import-transfer-csv.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset"
   },

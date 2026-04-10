@@ -14,9 +14,10 @@ export default function BasicInfoPage() {
   const [search, setSearch] = useState("");
   const healthUnits = data?.healthUnits || [];
 
-  const filteredUnits = healthUnits.filter(unit => {
+  const filteredUnits = healthUnits.filter((unit) => {
     const matchesAmphoe = amphoe === "all" || unit.amphoe === amphoe;
-    const matchesSearch = search === "" || 
+    const matchesSearch =
+      search === "" ||
       unit.name.toLowerCase().includes(search.toLowerCase()) ||
       unit.code.includes(search);
     return matchesAmphoe && matchesSearch;
@@ -28,17 +29,11 @@ export default function BasicInfoPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-primary">
-          ข้อมูลพื้นฐานหน่วยบริการ
-        </h1>
-        <p className="text-muted-foreground">
-          รพ.สต. สังกัด อบจ.อุบลราชธานี ทั้ง 13 อำเภอ
-        </p>
+        <h1 className="text-3xl font-bold text-primary">ข้อมูลพื้นฐานหน่วยบริการ</h1>
+        <p className="text-muted-foreground">รพ.สต. สังกัด อบจ.อุบลราชธานี</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <FilterBar
           fiscalYear={fiscalYear}
@@ -57,7 +52,6 @@ export default function BasicInfoPage() {
         </div>
       </div>
 
-      {/* Summary Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardContent className="flex items-center gap-4 p-4">
@@ -103,14 +97,13 @@ export default function BasicInfoPage() {
         </Card>
       </div>
 
-      {/* Units Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredUnits.map((unit) => (
           <Card key={unit.id} className="card-hover overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 pb-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">รหัส: {unit.code}</p>
+                  <p className="mb-1 text-xs text-muted-foreground">รหัส: {unit.code}</p>
                   <CardTitle className="text-lg">{unit.name}</CardTitle>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -118,37 +111,71 @@ export default function BasicInfoPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-4 space-y-3">
+            <CardContent className="space-y-3 pt-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                <span>หมู่ {unit.moo} ต.{unit.tambon} อ.{unit.amphoe}</span>
+                <span>
+                  หมู่ {unit.moo} ต.{unit.tambon} อ.{unit.amphoe}
+                </span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-muted-foreground text-xs">ประชากร</p>
-                  <p className="font-semibold">{unit.totalPopulation.toLocaleString()} คน</p>
-                  <p className="text-xs text-muted-foreground">
-                    ชาย {unit.male.toLocaleString()} / หญิง {unit.female.toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-muted-foreground text-xs">อสม.</p>
-                  <p className="font-semibold">{unit.healthVolunteers} คน</p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-muted-foreground text-xs">หมู่บ้าน</p>
-                  <p className="font-semibold">{unit.villages} หมู่บ้าน</p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-muted-foreground text-xs">หลังคาเรือน</p>
-                  <p className="font-semibold">{unit.households.toLocaleString()}</p>
-                </div>
+                <InfoBox
+                  label="ประชากร"
+                  value={`${Number(unit.totalPopulation || 0).toLocaleString()} คน`}
+                  subValue={`ชาย ${Number(unit.male || 0).toLocaleString()} / หญิง ${Number(unit.female || 0).toLocaleString()}`}
+                />
+                <InfoBox label="อสม." value={`${Number(unit.healthVolunteers || 0).toLocaleString()} คน`} />
+                <InfoBox label="หมู่บ้าน" value={`${Number(unit.villages || 0).toLocaleString()} หมู่บ้าน`} />
+                <InfoBox label="หลังคาเรือน" value={Number(unit.households || 0).toLocaleString()} />
+                <InfoBox
+                  label="ผู้สูงอายุ"
+                  value={`${Number(unit.elderlyPopulation || 0).toLocaleString()} คน`}
+                  subValue={
+                    Number(unit.totalPopulation || 0) > 0
+                      ? `${((Number(unit.elderlyPopulation || 0) / Number(unit.totalPopulation || 0)) * 100).toFixed(2)}%`
+                      : "0.00%"
+                  }
+                />
+                <InfoBox label="วัด/สำนักสงฆ์" value={`${Number(unit.templeCount || 0).toLocaleString()} แห่ง`} />
+                <InfoBox
+                  label="โรงเรียน"
+                  value={`${(
+                    Number(unit.primarySchoolCount || 0) +
+                    Number(unit.opportunitySchoolCount || 0) +
+                    Number(unit.secondarySchoolCount || 0)
+                  ).toLocaleString()} แห่ง`}
+                  subValue={`ประถม ${Number(unit.primarySchoolCount || 0)} / ขยายโอกาส ${Number(unit.opportunitySchoolCount || 0)} / มัธยม ${Number(unit.secondarySchoolCount || 0)}`}
+                />
+                <InfoBox
+                  label="ศพด. / สถานีสุขภาพ"
+                  value={`${Number(unit.childDevelopmentCenterCount || 0).toLocaleString()} / ${Number(unit.healthStationCount || 0).toLocaleString()}`}
+                />
+                <InfoBox
+                  label="ข้อมูลถ่ายโอน"
+                  value={`ปี ${unit.transferYear || "-"} / Size ${unit.unitSize || "-"}`}
+                  subValue={unit.cupName || "-"}
+                />
+                <InfoBox
+                  label="ประชากร UC66-68"
+                  value={`${Number(unit.ucPopulation68 || 0).toLocaleString()} คน`}
+                  subValue={`UC66 ${Number(unit.ucPopulation66 || 0).toLocaleString()} / UC67 ${Number(unit.ucPopulation67 || 0).toLocaleString()}`}
+                />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function InfoBox({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
+  return (
+    <div className="rounded-lg bg-muted/50 p-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-semibold">{value}</p>
+      {subValue ? <p className="text-xs text-muted-foreground">{subValue}</p> : null}
     </div>
   );
 }

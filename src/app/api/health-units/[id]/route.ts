@@ -102,13 +102,25 @@ export async function PUT(
     const body = await request.json()
 
     // Check if this is a demographics update
-    if (body.fiscalPeriodId !== undefined && body.totalPopulation !== undefined) {
+    if (
+      body.fiscalPeriodId !== undefined &&
+      (
+        body.totalPopulation !== undefined ||
+        body.male !== undefined ||
+        body.female !== undefined ||
+        body.elderlyPopulation !== undefined ||
+        body.villages !== undefined ||
+        body.households !== undefined ||
+        body.healthVolunteers !== undefined
+      )
+    ) {
       const result = await upsertDemographics({
         healthUnitId: unitId,
         fiscalPeriodId: body.fiscalPeriodId,
         male: body.male,
         female: body.female,
         totalPopulation: body.totalPopulation,
+        elderlyPopulation: body.elderlyPopulation,
         villages: body.villages,
         households: body.households,
         healthVolunteers: body.healthVolunteers,

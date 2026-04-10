@@ -162,6 +162,21 @@ model HealthUnit {
   affiliation String?   @default("อบจ.อุบลราชธานี") @db.VarChar(100)
   email       String?   @db.VarChar(255)
   phone       String?   @db.VarChar(20)
+  transferYear Int?     @map("transfer_year") @db.UnsignedSmallInt
+  unitSize    String?   @map("unit_size") @db.VarChar(10)
+  cupCode     String?   @map("cup_code") @db.VarChar(20)
+  cupName     String?   @map("cup_name") @db.VarChar(200)
+  localAuthority String? @map("local_authority") @db.VarChar(200)
+  province    String?   @db.VarChar(100)
+  ucPopulation66 Int?   @map("uc_population_66") @db.UnsignedInt
+  ucPopulation67 Int?   @map("uc_population_67") @db.UnsignedInt
+  ucPopulation68 Int?   @map("uc_population_68") @db.UnsignedInt
+  templeCount Int      @default(0) @map("temple_count") @db.UnsignedTinyInt
+  primarySchoolCount Int @default(0) @map("primary_school_count") @db.UnsignedTinyInt
+  opportunitySchoolCount Int @default(0) @map("opportunity_school_count") @db.UnsignedTinyInt
+  secondarySchoolCount Int @default(0) @map("secondary_school_count") @db.UnsignedTinyInt
+  childDevelopmentCenterCount Int @default(0) @map("child_development_center_count") @db.UnsignedTinyInt
+  healthStationCount Int @default(0) @map("health_station_count") @db.UnsignedTinyInt
   status      UnitStatus @default(active)
   isDeleted   Boolean   @default(false) @map("is_deleted")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -290,6 +305,7 @@ model HealthUnitDemographic {
   male             Int?      @db.UnsignedInt
   female           Int?      @db.UnsignedInt
   totalPopulation  Int?      @map("total_population") @db.UnsignedInt
+  elderlyPopulation Int?     @map("elderly_population") @db.UnsignedInt
   villages         Int?      @db.UnsignedInt
   households      Int?      @db.UnsignedInt
   healthVolunteers Int?     @map("health_volunteers") @db.UnsignedInt
