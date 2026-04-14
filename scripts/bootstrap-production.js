@@ -1,6 +1,107 @@
 const { spawn } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+
+function expandEnvTemplate(value) {
+  if (!value) {
+    return value;
+  }
+
+  return value.replace(/\$\{([A-Z0-9_]+)(:-([^}]*))?\}/gi, (_, name, _segment, fallback) => {
+    const resolved = process.env[name];
+    return resolved && resolved.length > 0 ? resolved : fallback ?? "";
+  });
+}
+
+function normalizeDatabaseUrl() {
+  const rawValue = expandEnvTemplate(process.env.DATABASE_URL);
+  const dbHost = process.env.SERVICE_NAME_DB || "db";
+  const dbPort = process.env.DB_PORT || "3306";
+  const dbName = process.env.DB_NAME || "ubon_health";
+  const dbPassword = process.env.DB_ROOT_PASSWORD || "12345678";
+  const fallback = `mysql://root:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+
+  if (!rawValue) {
+    process.env.DATABASE_URL = fallback;
+    return;
+  }
+
+  let nextValue = rawValue;
+
+  if (nextValue.includes("host.docker.internal")) {
+    nextValue = nextValue.replace(/host\.docker\.internal/gi, dbHost);
+  }
+
+  if (/\$\{[A-Z0-9_]+(?::-.*)?\}/i.test(nextValue)) {
+    nextValue = expandEnvTemplate(nextValue);
+  }
+
+  process.env.DATABASE_URL = nextValue || fallback;
+}
+
+function normalizeNextAuthUrl() {
+  const current = expandEnvTemplate(process.env.NEXTAUTH_URL)?.trim();
+  if (current && !/^https?:\/\/localhost(?::\d+)?\/?$/i.test(current)) {
+    process.env.NEXTAUTH_URL = current.replace(/\/+$/, "");
+    return;
+  }
+
+  const coolifyUrls = (process.env.COOLIFY_URL || "")
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  const preferredUrl =
+    coolifyUrls.find((value) => value.startsWith("https://") && !value.includes("sslip.io")) ||
+    coolifyUrls.find((value) => value.startsWith("https://")) ||
+    coolifyUrls.find((value) => value.startsWith("http://"));
+
+  if (preferredUrl) {
+    process.env.NEXTAUTH_URL = preferredUrl;
+    return;
+  }
+
+  const appPort = process.env.PORT || process.env.APP_PORT || "3010";
+  process.env.NEXTAUTH_URL = `http://localhost:${appPort}`;
+}
+
+function normalizeNextAuthSecret() {
+  const current = expandEnvTemplate(process.env.NEXTAUTH_SECRET)?.trim();
+  if (current) {
+    process.env.NEXTAUTH_SECRET = current;
+    return;
+  }
+
+  const seed = [
+    process.env.COOLIFY_RESOURCE_UUID,
+    process.env.COOLIFY_FQDN,
+    process.env.NEXTAUTH_URL,
+    "ubon-health-insights",
+  ]
+    .filter(Boolean)
+    .join("|");
+
+  process.env.NEXTAUTH_SECRET = crypto.createHash("sha256").update(seed).digest("hex");
+}
+
+function normalizeRuntimeEnvironment() {
+  process.env.PORT = process.env.PORT || process.env.APP_PORT || "3010";
+  process.env.AUTH_TRUST_HOST = process.env.AUTH_TRUST_HOST || "true";
+
+  normalizeDatabaseUrl();
+  normalizeNextAuthUrl();
+  normalizeNextAuthSecret();
+
+  console.log("Normalized runtime environment:", {
+    DATABASE_URL: process.env.DATABASE_URL?.replace(/:(?:[^:@/]+)@/, ":****@"),
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? "[set]" : "[missing]",
+    PORT: process.env.PORT,
+  });
+}
+
+normalizeRuntimeEnvironment();
 
 const { PrismaClient } = require("@prisma/client");
 
