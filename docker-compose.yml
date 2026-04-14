@@ -6,6 +6,27 @@
 
 services:
   # ---------------------------------------------------------------------------
+  # MariaDB Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: mariadb:11.4
+    container_name: ubon-health-db
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-12345678}
+      - MARIADB_DATABASE=${DB_NAME:-ubon_health}
+    volumes:
+      - ubon-db-data:/var/lib/mysql
+    networks:
+      - ubon-network
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
   # Next.js Application
   # ---------------------------------------------------------------------------
   app:
@@ -18,7 +39,7 @@ services:
       - "${APP_PORT:-3010}:3010"
     environment:
       # Database connection
-      - DATABASE_URL=${DATABASE_URL:-mysql://root:${DB_ROOT_PASSWORD:-12345678}@host.docker.internal:${DB_PORT:-3306}/${DB_NAME:-ubon_health}}
+      - DATABASE_URL=${DATABASE_URL:-mysql://root:${DB_ROOT_PASSWORD:-12345678}@db:${DB_PORT:-3306}/${DB_NAME:-ubon_health}}
       
       # NextAuth.js configuration
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3010}}
@@ -34,6 +55,9 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
       - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - ubon-network
     healthcheck:
@@ -52,6 +76,9 @@ services:
     restart: unless-stopped
     ports:
       - "${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - ubon-network
     profiles:
@@ -63,3 +90,6 @@ services:
 networks:
   ubon-network:
     driver: bridge
+
+volumes:
+  ubon-db-data:
