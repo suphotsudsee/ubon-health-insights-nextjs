@@ -70,6 +70,8 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/scripts/bootstrap-production.js ./scripts/bootstrap-production.js
+COPY --from=builder /app/data ./data
 
 # Set proper ownership
 RUN chown -R nextjs:nodejs /app
@@ -88,6 +90,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3010/api/health || exit 1
 
-# Start application
-# Using node directly for standalone output
-CMD ["node", "server.js"]
+# Start application with DB bootstrap
+CMD ["node", "scripts/bootstrap-production.js"]
