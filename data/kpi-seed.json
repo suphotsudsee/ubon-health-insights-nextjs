@@ -1,0 +1,556 @@
+{
+  "categories": [
+    {
+      "code": "PPFS",
+      "nameTh": "PPFS",
+      "nameEn": "Pregnancy, Post-partum, Family Planning & Screening",
+      "description": null,
+      "displayOrder": 1,
+      "colorCode": "#3B82F6",
+      "isActive": true
+    },
+    {
+      "code": "TTM",
+      "nameTh": "แพทย์แผนไทย",
+      "nameEn": "Traditional Thai Medicine",
+      "description": null,
+      "displayOrder": 2,
+      "colorCode": "#10B981",
+      "isActive": true
+    }
+  ],
+  "definitions": [
+    {
+      "categoryCode": "PPFS",
+      "code": "PPFS-01",
+      "nameTh": "ร้อยละหญิงฝากครรภ์ก่อน 12 สัปดาห์",
+      "nameEn": "Percentage of pregnant women registered before 12 weeks",
+      "description": null,
+      "unit": "%",
+      "targetValue": "80",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 1,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "PPFS",
+      "code": "PPFS-02",
+      "nameTh": "ร้อยละหญิงฝากครรภ์ครบ 5 ครั้งตามเกณฑ์",
+      "nameEn": "Percentage with 5 prenatal visits",
+      "description": null,
+      "unit": "%",
+      "targetValue": "75",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 2,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "PPFS",
+      "code": "PPFS-03",
+      "nameTh": "ร้อยละเด็กแรกเกิดน้ำหนักต่ำกว่า 2,500 กรัม",
+      "nameEn": "Low birth weight percentage",
+      "description": null,
+      "unit": "%",
+      "targetValue": "7",
+      "targetType": "max",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 3,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "PPFS",
+      "code": "PPFS-04",
+      "nameTh": "ร้อยละเด็กได้รับนมแม่อย่างน้อย 6 เดือน",
+      "nameEn": "Exclusive breastfeeding 6 months",
+      "description": null,
+      "unit": "%",
+      "targetValue": "50",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 4,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "TTM",
+      "code": "TTM-01",
+      "nameTh": "อัตราการใช้ยาสมุนไพร",
+      "nameEn": "Herbal medicine usage rate",
+      "description": null,
+      "unit": "%",
+      "targetValue": "25",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 1,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "TTM",
+      "code": "TTM-02",
+      "nameTh": "ร้อยละผู้ป่วยได้รับบริการนวดไทย",
+      "nameEn": "Thai massage service percentage",
+      "description": null,
+      "unit": "%",
+      "targetValue": "20",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 2,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "TTM",
+      "code": "TTM-03",
+      "nameTh": "ร้อยละผู้ป่วยได้รับบริการอบสมุนไพร",
+      "nameEn": "Herbal steam service percentage",
+      "description": null,
+      "unit": "%",
+      "targetValue": "15",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 3,
+      "isActive": true,
+      "isDeleted": false
+    },
+    {
+      "categoryCode": "TTM",
+      "code": "TTM-04",
+      "nameTh": "ร้อยละผู้ป่วยได้รับบริการประคบสมุนไพร",
+      "nameEn": "Herbal compress service percentage",
+      "description": null,
+      "unit": "%",
+      "targetValue": "18",
+      "targetType": "min",
+      "calculationFormula": null,
+      "dataSource": null,
+      "reportLink": null,
+      "displayOrder": 4,
+      "isActive": true,
+      "isDeleted": false
+    }
+  ],
+  "units": [
+    {
+      "code": "10601",
+      "name": "รพ.สต.บุ่งหวาย",
+      "shortName": null,
+      "amphoe": {
+        "code": "1006",
+        "nameTh": "ม่วงสามสิบ"
+      },
+      "tambon": {
+        "code": "100610601",
+        "nameTh": "บุ่งหวาย"
+      },
+      "moo": "1",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "bungwai@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "10602",
+      "name": "รพ.สต.หนองช้างใหญ่",
+      "shortName": null,
+      "amphoe": {
+        "code": "1006",
+        "nameTh": "ม่วงสามสิบ"
+      },
+      "tambon": {
+        "code": "100610602",
+        "nameTh": "หนองช้างใหญ่"
+      },
+      "moo": "3",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "nongchangyai@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "10701",
+      "name": "รพ.สต.นาจะหลวย",
+      "shortName": null,
+      "amphoe": {
+        "code": "1007",
+        "nameTh": "นาจะหลวย"
+      },
+      "tambon": {
+        "code": "100710701",
+        "nameTh": "นาจะหลวย"
+      },
+      "moo": "5",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "najaluang@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "10801",
+      "name": "รพ.สต.บุ่งไหม",
+      "shortName": null,
+      "amphoe": {
+        "code": "1008",
+        "nameTh": "วารินชำราบ"
+      },
+      "tambon": {
+        "code": "100810801",
+        "nameTh": "บุ่งไหม"
+      },
+      "moo": "2",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "bungmai@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "10901",
+      "name": "รพ.สต.เมืองเดช",
+      "shortName": null,
+      "amphoe": {
+        "code": "1009",
+        "nameTh": "เดชอุดม"
+      },
+      "tambon": {
+        "code": "100910901",
+        "nameTh": "เมืองเดช"
+      },
+      "moo": "1",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "muangdet@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "11001",
+      "name": "รพ.สต.ขุหลุ",
+      "shortName": null,
+      "amphoe": {
+        "code": "1010",
+        "nameTh": "ตระการพืชผล"
+      },
+      "tambon": {
+        "code": "101011001",
+        "nameTh": "ขุหลุ"
+      },
+      "moo": "4",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "khulu@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "11101",
+      "name": "รพ.สต.เขื่องใน",
+      "shortName": null,
+      "amphoe": {
+        "code": "1011",
+        "nameTh": "เขื่องใน"
+      },
+      "tambon": {
+        "code": "101111101",
+        "nameTh": "เขื่องใน"
+      },
+      "moo": "1",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "khuangnai@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    },
+    {
+      "code": "11201",
+      "name": "รพ.สต.พิบูลมังสาหาร",
+      "shortName": null,
+      "amphoe": {
+        "code": "1012",
+        "nameTh": "พิบูลมังสาหาร"
+      },
+      "tambon": {
+        "code": "101211201",
+        "nameTh": "พิบูล"
+      },
+      "moo": "2",
+      "affiliation": "อบจ.อุบลราชธานี",
+      "email": "phibun@example.com",
+      "phone": null,
+      "transferYear": null,
+      "unitSize": null,
+      "cupCode": null,
+      "cupName": null,
+      "localAuthority": null,
+      "province": null,
+      "status": "active"
+    }
+  ],
+  "results": [
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "10601",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "20",
+      "actualValue": "18",
+      "percentage": "90",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "10601",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "100",
+      "actualValue": "35",
+      "percentage": "35",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "10602",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "15",
+      "actualValue": "12",
+      "percentage": "80",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "10602",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "80",
+      "actualValue": "20",
+      "percentage": "25",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "10701",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "25",
+      "actualValue": "15",
+      "percentage": "60",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "10701",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "120",
+      "actualValue": "18",
+      "percentage": "15",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "10801",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "18",
+      "actualValue": "16",
+      "percentage": "89",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "10801",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "90",
+      "actualValue": "14",
+      "percentage": "15",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "10901",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "30",
+      "actualValue": "28",
+      "percentage": "93",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "10901",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "150",
+      "actualValue": "60",
+      "percentage": "40",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "11001",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "12",
+      "actualValue": "10",
+      "percentage": "83",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "11001",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "70",
+      "actualValue": "45",
+      "percentage": "64",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "11101",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "22",
+      "actualValue": "11",
+      "percentage": "50",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "11101",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "100",
+      "actualValue": "30",
+      "percentage": "30",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "PPFS-01",
+      "unitCode": "11201",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "28",
+      "actualValue": "24",
+      "percentage": "86",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    },
+    {
+      "kpiCode": "TTM-01",
+      "unitCode": "11201",
+      "fiscalYear": 2567,
+      "month": 12,
+      "quarter": 1,
+      "targetValue": "130",
+      "actualValue": "78",
+      "percentage": "60",
+      "notes": null,
+      "evidenceUrl": null,
+      "reviewStatus": "draft"
+    }
+  ]
+}

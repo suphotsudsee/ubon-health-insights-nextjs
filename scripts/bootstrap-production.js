@@ -329,12 +329,240 @@ async function importTransferSeed() {
   );
 }
 
+async function importKpiSeed() {
+  const seedPath = path.join(process.cwd(), "data", "kpi-seed.json");
+  if (!fs.existsSync(seedPath)) {
+    console.log(`KPI seed not found at ${seedPath}, skipping import.`);
+    return;
+  }
+
+  const payload = JSON.parse(fs.readFileSync(seedPath, "utf8"));
+
+  for (const category of payload.categories ?? []) {
+    await prisma.kpiCategory.upsert({
+      where: { code: category.code },
+      update: {
+        nameTh: category.nameTh,
+        nameEn: category.nameEn,
+        description: category.description,
+        displayOrder: category.displayOrder,
+        colorCode: category.colorCode,
+        isActive: category.isActive,
+      },
+      create: {
+        code: category.code,
+        nameTh: category.nameTh,
+        nameEn: category.nameEn,
+        description: category.description,
+        displayOrder: category.displayOrder,
+        colorCode: category.colorCode,
+        isActive: category.isActive,
+      },
+    });
+  }
+
+  const categories = await prisma.kpiCategory.findMany({
+    select: { id: true, code: true },
+  });
+  const categoryIdByCode = new Map(categories.map((item) => [item.code, item.id]));
+
+  for (const definition of payload.definitions ?? []) {
+    const categoryId = categoryIdByCode.get(definition.categoryCode);
+    if (!categoryId) {
+      continue;
+    }
+
+    await prisma.kpiDefinition.upsert({
+      where: { code: definition.code },
+      update: {
+        categoryId,
+        nameTh: definition.nameTh,
+        nameEn: definition.nameEn,
+        description: definition.description,
+        unit: definition.unit,
+        targetValue: definition.targetValue,
+        targetType: definition.targetType,
+        calculationFormula: definition.calculationFormula,
+        dataSource: definition.dataSource,
+        reportLink: definition.reportLink,
+        displayOrder: definition.displayOrder,
+        isActive: definition.isActive,
+        isDeleted: definition.isDeleted,
+      },
+      create: {
+        categoryId,
+        code: definition.code,
+        nameTh: definition.nameTh,
+        nameEn: definition.nameEn,
+        description: definition.description,
+        unit: definition.unit,
+        targetValue: definition.targetValue,
+        targetType: definition.targetType,
+        calculationFormula: definition.calculationFormula,
+        dataSource: definition.dataSource,
+        reportLink: definition.reportLink,
+        displayOrder: definition.displayOrder,
+        isActive: definition.isActive,
+        isDeleted: definition.isDeleted,
+      },
+    });
+  }
+
+  let createdUnits = 0;
+  let updatedUnits = 0;
+
+  for (const item of payload.units ?? []) {
+    const amphoe = await prisma.dimAmphoe.upsert({
+      where: { code: item.amphoe.code },
+      update: { nameTh: item.amphoe.nameTh },
+      create: {
+        code: item.amphoe.code,
+        nameTh: item.amphoe.nameTh,
+      },
+    });
+
+    let tambonId = null;
+    if (item.tambon?.code && item.tambon?.nameTh) {
+      const tambon = await prisma.dimTambon.upsert({
+        where: { code: item.tambon.code },
+        update: {
+          amphoeId: amphoe.id,
+          nameTh: item.tambon.nameTh,
+        },
+        create: {
+          code: item.tambon.code,
+          amphoeId: amphoe.id,
+          nameTh: item.tambon.nameTh,
+        },
+      });
+      tambonId = tambon.id;
+    }
+
+    const data = {
+      name: item.name,
+      shortName: item.shortName,
+      amphoeId: amphoe.id,
+      tambonId,
+      moo: item.moo,
+      affiliation: item.affiliation,
+      email: item.email,
+      phone: item.phone,
+      transferYear: item.transferYear,
+      unitSize: item.unitSize,
+      cupCode: item.cupCode,
+      cupName: item.cupName,
+      localAuthority: item.localAuthority,
+      province: item.province,
+      status: item.status || "active",
+      isDeleted: false,
+    };
+
+    const existing = await prisma.healthUnit.findUnique({
+      where: { code: item.code },
+    });
+
+    if (existing) {
+      await prisma.healthUnit.update({
+        where: { id: existing.id },
+        data,
+      });
+      updatedUnits += 1;
+    } else {
+      await prisma.healthUnit.create({
+        data: {
+          code: item.code,
+          ...data,
+        },
+      });
+      createdUnits += 1;
+    }
+  }
+
+  const definitions = await prisma.kpiDefinition.findMany({
+    select: { id: true, code: true },
+  });
+  const definitionIdByCode = new Map(definitions.map((item) => [item.code, item.id]));
+
+  const units = await prisma.healthUnit.findMany({
+    where: { code: { in: (payload.units ?? []).map((item) => item.code) } },
+    select: { id: true, code: true },
+  });
+  const unitIdByCode = new Map(units.map((item) => [item.code, item.id]));
+
+  const fiscalYears = [...new Set((payload.results ?? []).map((item) => item.fiscalYear))];
+  for (const fiscalYear of fiscalYears) {
+    await ensureFiscalPeriods(fiscalYear);
+  }
+
+  let importedResults = 0;
+
+  for (const item of payload.results ?? []) {
+    const kpiId = definitionIdByCode.get(item.kpiCode);
+    const healthUnitId = unitIdByCode.get(item.unitCode);
+
+    if (!kpiId || !healthUnitId) {
+      continue;
+    }
+
+    const period = await prisma.fiscalPeriod.findUnique({
+      where: {
+        fiscalYear_quarter_month: {
+          fiscalYear: item.fiscalYear,
+          quarter: quarterForMonth(item.month),
+          month: item.month,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!period) {
+      continue;
+    }
+
+    await prisma.kpiResult.upsert({
+      where: {
+        kpiId_healthUnitId_fiscalPeriodId: {
+          kpiId,
+          healthUnitId,
+          fiscalPeriodId: period.id,
+        },
+      },
+      update: {
+        targetValue: item.targetValue,
+        actualValue: item.actualValue,
+        percentage: item.percentage,
+        notes: item.notes,
+        evidenceUrl: item.evidenceUrl,
+        reviewStatus: item.reviewStatus,
+      },
+      create: {
+        kpiId,
+        healthUnitId,
+        fiscalPeriodId: period.id,
+        targetValue: item.targetValue,
+        actualValue: item.actualValue,
+        percentage: item.percentage,
+        notes: item.notes,
+        evidenceUrl: item.evidenceUrl,
+        reviewStatus: item.reviewStatus,
+      },
+    });
+
+    importedResults += 1;
+  }
+
+  console.log(
+    `KPI seed import complete: ${payload.categories?.length ?? 0} categories, ${payload.definitions?.length ?? 0} definitions, ${createdUnits} units created, ${updatedUnits} units updated, ${importedResults} KPI results imported.`,
+  );
+}
+
 async function bootstrap() {
   console.log("Running prisma db push...");
   await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
 
   console.log("Importing production seed data...");
   await importTransferSeed();
+  await importKpiSeed();
 }
 
 async function main() {
