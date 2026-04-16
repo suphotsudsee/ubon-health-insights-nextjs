@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import { getUsers, createUser, updateUser, deleteUser, getUser } from '@/actions/auth'
+
+async function requireAdmin() {
+  const session = await auth()
+  const role = (session?.user as { role?: string } | undefined)?.role
+
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+  if (role !== 'admin') {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    )
+  }
+
+  return null
+}
 
 /**
  * GET /api/auth/users
  * Get all users (admin only)
  */
 export async function GET(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
   const searchParams = request.nextUrl.searchParams
   const userId = searchParams.get('id')
 
@@ -41,6 +66,9 @@ export async function GET(request: NextRequest) {
  * Create a new user (admin only)
  */
 export async function POST(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
   try {
     const body = await request.json()
 
@@ -68,6 +96,9 @@ export async function POST(request: NextRequest) {
  * Update a user (admin only)
  */
 export async function PUT(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { id, ...updateData } = body
@@ -103,6 +134,9 @@ export async function PUT(request: NextRequest) {
  * Delete a user (admin only)
  */
 export async function DELETE(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
   const searchParams = request.nextUrl.searchParams
   const userId = searchParams.get('id')
 

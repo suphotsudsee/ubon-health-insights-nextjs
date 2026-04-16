@@ -107,6 +107,31 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
+async function ensureUtf8mb4Encoding() {
+  const dbName = process.env.DB_NAME || "ubon_health";
+  const targetCharset = "utf8mb4";
+  const targetCollation = "utf8mb4_unicode_ci";
+
+  console.log(`Ensuring ${dbName} uses ${targetCharset}/${targetCollation}...`);
+
+  await prisma.$executeRawUnsafe(
+    `ALTER DATABASE \`${dbName}\` CHARACTER SET ${targetCharset} COLLATE ${targetCollation}`,
+  );
+
+  const tables = await prisma.$queryRawUnsafe(`
+    SELECT TABLE_NAME AS tableName
+    FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = ?
+      AND TABLE_TYPE = 'BASE TABLE'
+  `, dbName);
+
+  for (const table of tables) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE \`${table.tableName}\` CONVERT TO CHARACTER SET ${targetCharset} COLLATE ${targetCollation}`,
+    );
+  }
+}
+
 function runNodeScript(args, label) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, args, {
@@ -557,6 +582,8 @@ async function importKpiSeed() {
 }
 
 async function bootstrap() {
+  await ensureUtf8mb4Encoding();
+
   console.log("Running prisma db push...");
   await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
 
