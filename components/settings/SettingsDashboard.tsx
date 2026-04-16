@@ -1221,7 +1221,7 @@ export function SettingsDashboard() {
             หน่วยบริการ
           </TabsTrigger>
           <TabsTrigger value="data" className="rounded-full border px-4 py-2 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            ข้อมูลระบบ
+            ข้อมูลKPI
           </TabsTrigger>
           <TabsTrigger value="finance" className="rounded-full border px-4 py-2 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             การเงิน
@@ -1475,63 +1475,6 @@ export function SettingsDashboard() {
             <SummaryCard icon={Building2} label="จำนวน CUP" value={formatNumber(new Set(units.map((unit) => unit.cupCode).filter(Boolean)).size)} />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">ภาพรวมข้อมูลหลัก</CardTitle>
-                <CardDescription>สรุปข้อมูลที่ระบบใช้งานร่วมกันในแดชบอร์ด</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <DataRow label="ปีงบประมาณล่าสุด" value={years[0] ? `พ.ศ. ${years[0]}` : "-"} />
-                <DataRow label="งวดปัจจุบัน" value={currentPeriod ? `ปี ${currentPeriod.fiscalYear} ไตรมาส ${currentPeriod.quarter} เดือน ${currentPeriod.month}` : "-"} />
-                <DataRow label="จำนวนครัวเรือน" value={formatNumber(stats?.totalHouseholds)} />
-                <DataRow label="อสม.ทั้งหมด" value={formatNumber(stats?.totalVolunteers)} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardTitle className="text-xl">หน่วยบริการในระบบ</CardTitle>
-                  <CardDescription>รายการหน่วยบริการที่ดึงได้จากฐานข้อมูลปัจจุบัน</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Input value={unitSearch} onChange={(event) => setUnitSearch(event.target.value)} placeholder="ค้นหาหน่วยบริการหรือรหัส" className="w-full md:w-60" />
-                  <Input value={unitTransferYearFilter} onChange={(event) => setUnitTransferYearFilter(event.target.value)} placeholder="ปีโอน" className="w-28" />
-                  <select
-                    value={unitSizeFilter}
-                    onChange={(event) => setUnitSizeFilter(event.target.value)}
-                    className="flex h-10 w-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">ทุก Size</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                  </select>
-                  <Button variant="outline" onClick={() => void loadData()} disabled={isLoading}>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    รีเฟรช
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {filteredUnits.slice(0, 8).map((unit) => (
-                    <div key={unit.id} className="flex items-center justify-between rounded-xl border px-4 py-3">
-                      <div>
-                        <p className="font-medium">{unit.name}</p>
-                        <p className="text-sm text-muted-foreground">{unit.code}</p>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${unit.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
-                        {unit.status === "active" ? "ใช้งาน" : "ปิดใช้งาน"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
@@ -1541,14 +1484,14 @@ export function SettingsDashboard() {
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateFiscalYear}>
                   <FormInput
-                    label="เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"
+                    label="ปีงบประมาณ"
                     value={fiscalYearForm.fiscalYear}
                     onChange={(value) => setFiscalYearForm({ fiscalYear: value })}
-                    placeholder="เน€เธเนเธ 2568"
+                    placeholder="เช่น 2568"
                   />
                   <Button type="submit" className="w-full" disabled={isSaving || !fiscalYearForm.fiscalYear}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"}
+                    {isSaving ? "กำลังบันทึก..." : "เพิ่มปีงบประมาณ"}
                   </Button>
                 </form>
               </CardContent>
