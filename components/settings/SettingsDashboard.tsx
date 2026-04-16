@@ -1556,8 +1556,8 @@ export function SettingsDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</CardTitle>
-                <CardDescription>เธฅเธเนเธ”เนเน€เธเธเธฒเธฐเธเธตเธ—เธตเนเธขเธฑเธเนเธกเนเธกเธตเธเนเธญเธกเธนเธฅ KPI เธเธฒเธฃเน€เธเธดเธ เธซเธฃเธทเธญเธเธฃเธฐเธเธฒเธเธฃเธเธนเธเธญเธขเธนเน</CardDescription>
+                <CardTitle className="text-xl">จัดการปีงบประมาณ</CardTitle>
+                <CardDescription>ลบได้เฉพาะปีที่ยังไม่มีข้อมูล KPI การเงิน หรือประชากรผูกอยู่</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
