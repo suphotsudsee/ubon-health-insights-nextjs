@@ -1564,11 +1564,11 @@ export function SettingsDashboard() {
                   <table className="w-full min-w-[820px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</th>
-                        <th className="pb-3 font-medium">เธเธณเธเธงเธเธเธงเธ”</th>
-                        <th className="pb-3 font-medium">เธเธดเธ”เธเธงเธ”เนเธฅเนเธง</th>
-                        <th className="pb-3 font-medium">เธเนเธญเธกเธนเธฅเธ—เธตเนเธเธนเธ</th>
-                        <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
+                        <th className="pb-3 font-medium">ปีงบประมาณ</th>
+                        <th className="pb-3 font-medium">จำนวนงวด</th>
+                        <th className="pb-3 font-medium">ปิดงวดแล้ว</th>
+                        <th className="pb-3 font-medium">ข้อมูลที่ผูก</th>
+                        <th className="pb-3 font-medium text-right">จัดการ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1578,7 +1578,7 @@ export function SettingsDashboard() {
                           <td className="py-4">{item.periodCount}</td>
                           <td className="py-4">{item.closedCount}</td>
                           <td className="py-4 text-muted-foreground">
-                            KPI {item.totalKpiResults} / เธเธฒเธฃเน€เธเธดเธ {item.totalFinanceRecords} / เธเธฃเธฐเธเธฒเธเธฃ {item.totalDemographics}
+                            KPI {item.totalKpiResults} / การเงิน {item.totalFinanceRecords} / ประชากร {item.totalDemographics}
                           </td>
                           <td className="py-4">
                             <div className="flex justify-end gap-2">
@@ -1589,7 +1589,7 @@ export function SettingsDashboard() {
                                 disabled={item.hasUsage}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                เธฅเธ
+                                ลบ
                               </Button>
                             </div>
                           </td>
