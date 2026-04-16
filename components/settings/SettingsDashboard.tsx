@@ -1899,46 +1899,46 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingPeriod)} onOpenChange={(open) => (!open ? setEditingPeriod(null) : null)}>
         <DialogContent className={dialogContentClassName}>
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</DialogTitle>
-            <DialogDescription>เธเธฃเธฑเธเธเธทเนเธญเน€เธ”เธทเธญเธ เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ เธชเธดเนเธเธชเธธเธ” เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเธเธดเธ”เธเธงเธ”</DialogDescription>
+            <DialogTitle>แก้ไขงวดปีงบประมาณ</DialogTitle>
+            <DialogDescription>ปรับชื่อเดือน วันที่เริ่มต้น สิ้นสุด และสถานะการปิดงวด</DialogDescription>
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdatePeriod}>
             <div className={dialogBodyClassName}>
               <FormInput
-                label="เธเธทเนเธญเน€เธ”เธทเธญเธ"
+                label="ชื่อเดือน"
                 value={editingPeriod?.monthNameTh || ""}
                 onChange={(value) => setEditingPeriod((current) => (current ? { ...current, monthNameTh: value } : current))}
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <FormInput
-                  label="เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ"
+                  label="วันที่เริ่มต้น"
                   type="date"
                   value={editingPeriod?.startDate ? new Date(editingPeriod.startDate).toISOString().slice(0, 10) : ""}
                   onChange={(value) => setEditingPeriod((current) => (current ? { ...current, startDate: value } : current))}
                 />
                 <FormInput
-                  label="เธงเธฑเธเธ—เธตเนเธชเธดเนเธเธชเธธเธ”"
+                  label="วันที่สิ้นสุด"
                   type="date"
                   value={editingPeriod?.endDate ? new Date(editingPeriod.endDate).toISOString().slice(0, 10) : ""}
                   onChange={(value) => setEditingPeriod((current) => (current ? { ...current, endDate: value } : current))}
                 />
               </div>
               <FormSelect
-                label="เธชเธ–เธฒเธเธฐเธเธงเธ”"
+                label="สถานะงวด"
                 value={editingPeriod?.isClosed ? "closed" : "open"}
                 onChange={(value) => setEditingPeriod((current) => (current ? { ...current, isClosed: value === "closed" } : current))}
                 options={[
-                  { value: "open", label: "เน€เธเธดเธ”เธเธงเธ”" },
-                  { value: "closed", label: "เธเธดเธ”เธเธงเธ”" },
+                  { value: "open", label: "เปิดงวด" },
+                  { value: "closed", label: "ปิดงวด" },
                 ]}
               />
             </div>
             <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingPeriod(null)}>
-                เธขเธเน€เธฅเธดเธ
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกงวดปีงบประมาณ"}
               </Button>
             </DialogFooter>
           </form>
