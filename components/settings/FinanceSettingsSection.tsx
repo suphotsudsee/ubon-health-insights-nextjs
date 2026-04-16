@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Plus, RefreshCcw, Trash2, Upload } from "lucide-react";
+import { ExternalLink, Pencil, Plus, RefreshCcw, Trash2, Upload } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -602,6 +603,33 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
           <option key={item} value={item} />
         ))}
       </datalist>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">เมนูการเงิน</CardTitle>
+          <CardDescription>ย้ายเมนูบันทึกรายรับ บันทึกรายจ่าย และรายการข้อมูลมาไว้ใน Settings &gt; การเงิน</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href="/finance/income/create">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              บันทึกรายรับ
+            </Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link href="/finance/expense/create">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              บันทึกรายจ่าย
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/finance/list">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              รายการข้อมูล
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard label="รายการที่โหลด" value={String(records.length)} />

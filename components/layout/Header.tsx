@@ -7,15 +7,11 @@ import {
   Activity,
   BarChart3,
   Building,
-  ChevronDown,
   LayoutDashboard,
   Leaf,
-  List,
   LogIn,
   LogOut,
   Menu,
-  MinusCircle,
-  PlusCircle,
   Settings,
   Wallet,
 } from "lucide-react";
@@ -23,30 +19,16 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-type NavChildItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
 type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: NavChildItem[];
 };
-
-const financeNavItems: NavChildItem[] = [
-  { href: "/finance/income/create", label: "บันทึกรายรับ", icon: PlusCircle },
-  { href: "/finance/expense/create", label: "บันทึกรายจ่าย", icon: MinusCircle },
-  { href: "/finance/list", label: "รายการข้อมูล", icon: List },
-  { href: "/finance/dashboard", label: "Dashboard สถานะเงินบำรุง", icon: LayoutDashboard },
-];
 
 const publicNavItems: NavItem[] = [
   { href: "/", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/basic-info", label: "ข้อมูลพื้นฐาน", icon: Building },
-  { href: "/finance/dashboard", label: "การเงิน", icon: Wallet, children: financeNavItems },
+  { href: "/finance/dashboard", label: "การเงิน", icon: Wallet },
   { href: "/ppfs", label: "PPFS", icon: Activity },
   { href: "/ttm", label: "แพทย์แผนไทย", icon: Leaf },
   { href: "/comparison", label: "เปรียบเทียบ", icon: BarChart3 },
@@ -68,92 +50,7 @@ function NavLinks({
     <>
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = item.children ? pathname.startsWith("/finance") : pathname === item.href;
-
-        if (item.children && !mobile) {
-          return (
-            <div key={item.href} className="group relative">
-              <Link
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-                <ChevronDown className="h-4 w-4" />
-              </Link>
-              <div className="invisible absolute left-0 top-full z-50 min-w-[280px] translate-y-1 opacity-0 transition-all group-hover:visible group-hover:translate-y-2 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-2 group-focus-within:opacity-100">
-                <div className="rounded-xl border bg-card p-2 shadow-lg">
-                  {item.children.map((child) => {
-                    const ChildIcon = child.icon;
-                    const isChildActive = pathname === child.href;
-
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                          isChildActive
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        )}
-                      >
-                        <ChildIcon className="h-4 w-4" />
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        if (item.children && mobile) {
-          return (
-            <div key={item.href} className="space-y-2">
-              <Link
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-4 py-2 text-base font-medium transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-              <div className="ml-5 flex flex-col gap-1 border-l pl-3">
-                {item.children.map((child) => {
-                  const ChildIcon = child.icon;
-                  const isChildActive = pathname === child.href;
-
-                  return (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                        isChildActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      )}
-                    >
-                      <ChildIcon className="h-4 w-4" />
-                      {child.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
+        const isActive = pathname === item.href;
 
         return (
           <Link
