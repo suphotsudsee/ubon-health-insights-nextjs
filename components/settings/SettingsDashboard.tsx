@@ -1519,11 +1519,11 @@ export function SettingsDashboard() {
             <Card>
               <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃ KPI Master</CardTitle>
-                  <CardDescription>เนเธเนเนเธเนเธฅเธฐเธฅเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ” เนเธ”เธขเธเธฐเธฅเธเนเธกเนเนเธ”เนเธซเธฒเธเธกเธตเธเธฅเธฅเธฑเธเธเน KPI เธเธนเธเธญเธขเธนเน</CardDescription>
+                  <CardTitle className="text-xl">จัดการ KPI Master</CardTitle>
+                  <CardDescription>แก้ไขและลบตัวชี้วัด โดยจะลบไม่ได้หากมีผลลัพธ์ KPI ผูกอยู่</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="เธเนเธเธซเธฒเธฃเธซเธฑเธช KPI เธเธทเนเธญ เธซเธฃเธทเธญเธซเธกเธงเธ”" className="w-full md:w-72" />
+                  <Input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="ค้นหารหัส KPI ชื่อ หรือหมวด" className="w-full md:w-72" />
                   <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
                     <RefreshCcw className="h-4 w-4" />
                   </Button>
@@ -1534,12 +1534,12 @@ export function SettingsDashboard() {
                   <table className="w-full min-w-[980px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">เธฃเธซเธฑเธช</th>
-                        <th className="pb-3 font-medium">เธเธทเนเธญ KPI</th>
-                        <th className="pb-3 font-medium">เธซเธกเธงเธ”</th>
-                        <th className="pb-3 font-medium">เน€เธเนเธฒเธซเธกเธฒเธข</th>
-                        <th className="pb-3 font-medium">เธเธฅเธฅเธฑเธเธเนเธ—เธตเนเธเธนเธ</th>
-                        <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
+                        <th className="pb-3 font-medium">รหัส</th>
+                        <th className="pb-3 font-medium">ชื่อ KPI</th>
+                        <th className="pb-3 font-medium">หมวด</th>
+                        <th className="pb-3 font-medium">เป้าหมาย</th>
+                        <th className="pb-3 font-medium">ผลลัพธ์ที่ผูก</th>
+                        <th className="pb-3 font-medium text-right">จัดการ</th>
                       </tr>
                     </thead>
                     <tbody>
