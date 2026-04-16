@@ -1535,8 +1535,8 @@ export function SettingsDashboard() {
           <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</CardTitle>
-                <CardDescription>เธฃเธฐเธเธเธเธฐเธชเธฃเนเธฒเธ 12 เธเธงเธ”เธญเธฑเธ•เนเธเธกเธฑเธ•เธดเธชเธณเธซเธฃเธฑเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เธ—เธตเนเธฃเธฐเธเธธ</CardDescription>
+                <CardTitle className="text-xl">เพิ่มปีงบประมาณ</CardTitle>
+                <CardDescription>ระบบจะสร้าง 12 งวดอัตโนมัติสำหรับปีงบประมาณที่ระบุ</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateFiscalYear}>
