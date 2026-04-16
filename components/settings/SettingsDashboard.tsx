@@ -1800,89 +1800,91 @@ export function SettingsDashboard() {
       </Dialog>
 
       <Dialog open={Boolean(editingUnit)} onOpenChange={(open) => (!open ? setEditingUnit(null) : null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className={dialogContentWideClassName}>
           <DialogHeader>
             <DialogTitle>แก้ไขหน่วยบริการ</DialogTitle>
             <DialogDescription>ปรับข้อมูลหลักของหน่วยบริการ รวมถึงรหัส อำเภอ และตำบล</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdateUnit}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="รหัสหน่วยบริการ" value={editUnitForm.code} onChange={(value) => setEditUnitForm((current) => ({ ...current, code: value }))} />
-              <FormInput label="ชื่อย่อ" value={editUnitForm.shortName} onChange={(value) => setEditUnitForm((current) => ({ ...current, shortName: value }))} />
-            </div>
-            <FormInput label="ชื่อหน่วยบริการ" value={editUnitForm.name} onChange={(value) => setEditUnitForm((current) => ({ ...current, name: value }))} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormSelect
-                label="อำเภอ"
-                value={editUnitForm.amphoeId}
-                onChange={(value) => setEditUnitForm((current) => ({ ...current, amphoeId: value, tambonId: "" }))}
-                options={[{ value: "", label: "เลือกอำเภอ" }, ...districts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
-              />
-              <FormSelect
-                label="ตำบล"
-                value={editUnitForm.tambonId}
-                onChange={(value) => setEditUnitForm((current) => ({ ...current, tambonId: value }))}
-                options={[{ value: "", label: "ไม่ระบุ" }, ...editSubdistricts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="หมู่" value={editUnitForm.moo} onChange={(value) => setEditUnitForm((current) => ({ ...current, moo: value }))} />
-              <FormSelect
-                label="สถานะ"
-                value={editUnitForm.status}
-                onChange={(value) => setEditUnitForm((current) => ({ ...current, status: value as "active" | "inactive" }))}
-                options={[
-                  { value: "active", label: "ใช้งาน" },
-                  { value: "inactive", label: "ปิดใช้งาน" },
-                ]}
-              />
-            </div>
-            <FormInput label="สังกัด" value={editUnitForm.affiliation} onChange={(value) => setEditUnitForm((current) => ({ ...current, affiliation: value }))} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="อีเมล" type="email" value={editUnitForm.email} onChange={(value) => setEditUnitForm((current) => ({ ...current, email: value }))} />
-              <FormInput label="โทรศัพท์" value={editUnitForm.phone} onChange={(value) => setEditUnitForm((current) => ({ ...current, phone: value }))} />
-            </div>
-            <div className="rounded-xl border bg-muted/20 p-4">
-              <div className="mb-3">
-                <p className="text-sm font-medium">ข้อมูลถ่ายโอน</p>
-                <p className="text-xs text-muted-foreground">แก้ไขปีโอน ขนาดหน่วยบริการ CUP และประชากร UC</p>
+          <form className={dialogFormClassName} onSubmit={handleUpdateUnit}>
+            <div className={dialogBodyClassName}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="รหัสหน่วยบริการ" value={editUnitForm.code} onChange={(value) => setEditUnitForm((current) => ({ ...current, code: value }))} />
+                <FormInput label="ชื่อย่อ" value={editUnitForm.shortName} onChange={(value) => setEditUnitForm((current) => ({ ...current, shortName: value }))} />
+              </div>
+              <FormInput label="ชื่อหน่วยบริการ" value={editUnitForm.name} onChange={(value) => setEditUnitForm((current) => ({ ...current, name: value }))} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormSelect
+                  label="อำเภอ"
+                  value={editUnitForm.amphoeId}
+                  onChange={(value) => setEditUnitForm((current) => ({ ...current, amphoeId: value, tambonId: "" }))}
+                  options={[{ value: "", label: "เลือกอำเภอ" }, ...districts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
+                />
+                <FormSelect
+                  label="ตำบล"
+                  value={editUnitForm.tambonId}
+                  onChange={(value) => setEditUnitForm((current) => ({ ...current, tambonId: value }))}
+                  options={[{ value: "", label: "ไม่ระบุ" }, ...editSubdistricts.map((item) => ({ value: String(item.id), label: item.nameTh }))]}
+                />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="ปีโอน" value={editUnitForm.transferYear} onChange={(value) => setEditUnitForm((current) => ({ ...current, transferYear: value }))} />
-                <FormInput label="Size" value={editUnitForm.unitSize} onChange={(value) => setEditUnitForm((current) => ({ ...current, unitSize: value }))} />
-                <FormInput label="รหัส CUP" value={editUnitForm.cupCode} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupCode: value }))} />
-                <FormInput label="ชื่อ CUP" value={editUnitForm.cupName} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupName: value }))} />
-                <FormInput label="สังกัด อปท." value={editUnitForm.localAuthority} onChange={(value) => setEditUnitForm((current) => ({ ...current, localAuthority: value }))} />
-                <FormInput label="จังหวัด" value={editUnitForm.province} onChange={(value) => setEditUnitForm((current) => ({ ...current, province: value }))} />
-                <FormInput label="ปชก.UC66" value={editUnitForm.ucPopulation66} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation66: value }))} />
-                <FormInput label="ปชก.UC67" value={editUnitForm.ucPopulation67} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation67: value }))} />
-                <FormInput label="ปชก.UC68" value={editUnitForm.ucPopulation68} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation68: value }))} />
+                <FormInput label="หมู่" value={editUnitForm.moo} onChange={(value) => setEditUnitForm((current) => ({ ...current, moo: value }))} />
+                <FormSelect
+                  label="สถานะ"
+                  value={editUnitForm.status}
+                  onChange={(value) => setEditUnitForm((current) => ({ ...current, status: value as "active" | "inactive" }))}
+                  options={[
+                    { value: "active", label: "ใช้งาน" },
+                    { value: "inactive", label: "ปิดใช้งาน" },
+                  ]}
+                />
               </div>
-            </div>
-            <div className="rounded-xl border bg-muted/20 p-4">
-              <div className="mb-3">
-                <p className="text-sm font-medium">ข้อมูลพื้นฐานหน่วยบริการ</p>
-                <p className="text-xs text-muted-foreground">
-                  บันทึกลงข้อมูลงวดปัจจุบัน {currentPeriod ? `(ปี ${currentPeriod.fiscalYear} ไตรมาส ${currentPeriod.quarter} เดือน ${currentPeriod.month})` : ""}
-                </p>
-              </div>
+              <FormInput label="สังกัด" value={editUnitForm.affiliation} onChange={(value) => setEditUnitForm((current) => ({ ...current, affiliation: value }))} />
               <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="ประชากรรวม" value={editUnitForm.totalPopulation} onChange={(value) => setEditUnitForm((current) => ({ ...current, totalPopulation: value }))} />
-                <FormInput label="อสม." value={editUnitForm.healthVolunteers} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthVolunteers: value }))} />
-                <FormInput label="ชาย" value={editUnitForm.male} onChange={(value) => setEditUnitForm((current) => ({ ...current, male: value }))} />
-                <FormInput label="หญิง" value={editUnitForm.female} onChange={(value) => setEditUnitForm((current) => ({ ...current, female: value }))} />
-                <FormInput label="ผู้สูงอายุ" value={editUnitForm.elderlyPopulation} onChange={(value) => setEditUnitForm((current) => ({ ...current, elderlyPopulation: value }))} />
-                <FormInput label="หมู่บ้าน" value={editUnitForm.villages} onChange={(value) => setEditUnitForm((current) => ({ ...current, villages: value }))} />
-                <FormInput label="หลังคาเรือน" value={editUnitForm.households} onChange={(value) => setEditUnitForm((current) => ({ ...current, households: value }))} />
-                <FormInput label="วัด/สำนักสงฆ์" value={editUnitForm.templeCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, templeCount: value }))} />
-                <FormInput label="โรงเรียนประถม" value={editUnitForm.primarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, primarySchoolCount: value }))} />
-                <FormInput label="โรงเรียนขยายโอกาส" value={editUnitForm.opportunitySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, opportunitySchoolCount: value }))} />
-                <FormInput label="โรงเรียนมัธยม" value={editUnitForm.secondarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, secondarySchoolCount: value }))} />
-                <FormInput label="ศูนย์พัฒนาเด็กเล็ก" value={editUnitForm.childDevelopmentCenterCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, childDevelopmentCenterCount: value }))} />
-                <FormInput label="สถานีสุขภาพ" value={editUnitForm.healthStationCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthStationCount: value }))} />
+                <FormInput label="อีเมล" type="email" value={editUnitForm.email} onChange={(value) => setEditUnitForm((current) => ({ ...current, email: value }))} />
+                <FormInput label="โทรศัพท์" value={editUnitForm.phone} onChange={(value) => setEditUnitForm((current) => ({ ...current, phone: value }))} />
+              </div>
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <div className="mb-3">
+                  <p className="text-sm font-medium">ข้อมูลถ่ายโอน</p>
+                  <p className="text-xs text-muted-foreground">แก้ไขปีโอน ขนาดหน่วยบริการ CUP และประชากร UC</p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <FormInput label="ปีโอน" value={editUnitForm.transferYear} onChange={(value) => setEditUnitForm((current) => ({ ...current, transferYear: value }))} />
+                  <FormInput label="Size" value={editUnitForm.unitSize} onChange={(value) => setEditUnitForm((current) => ({ ...current, unitSize: value }))} />
+                  <FormInput label="รหัส CUP" value={editUnitForm.cupCode} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupCode: value }))} />
+                  <FormInput label="ชื่อ CUP" value={editUnitForm.cupName} onChange={(value) => setEditUnitForm((current) => ({ ...current, cupName: value }))} />
+                  <FormInput label="สังกัด อปท." value={editUnitForm.localAuthority} onChange={(value) => setEditUnitForm((current) => ({ ...current, localAuthority: value }))} />
+                  <FormInput label="จังหวัด" value={editUnitForm.province} onChange={(value) => setEditUnitForm((current) => ({ ...current, province: value }))} />
+                  <FormInput label="ปชก.UC66" value={editUnitForm.ucPopulation66} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation66: value }))} />
+                  <FormInput label="ปชก.UC67" value={editUnitForm.ucPopulation67} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation67: value }))} />
+                  <FormInput label="ปชก.UC68" value={editUnitForm.ucPopulation68} onChange={(value) => setEditUnitForm((current) => ({ ...current, ucPopulation68: value }))} />
+                </div>
+              </div>
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <div className="mb-3">
+                  <p className="text-sm font-medium">ข้อมูลพื้นฐานหน่วยบริการ</p>
+                  <p className="text-xs text-muted-foreground">
+                    บันทึกลงข้อมูลงวดปัจจุบัน {currentPeriod ? `(ปี ${currentPeriod.fiscalYear} ไตรมาส ${currentPeriod.quarter} เดือน ${currentPeriod.month})` : ""}
+                  </p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <FormInput label="ประชากรรวม" value={editUnitForm.totalPopulation} onChange={(value) => setEditUnitForm((current) => ({ ...current, totalPopulation: value }))} />
+                  <FormInput label="อสม." value={editUnitForm.healthVolunteers} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthVolunteers: value }))} />
+                  <FormInput label="ชาย" value={editUnitForm.male} onChange={(value) => setEditUnitForm((current) => ({ ...current, male: value }))} />
+                  <FormInput label="หญิง" value={editUnitForm.female} onChange={(value) => setEditUnitForm((current) => ({ ...current, female: value }))} />
+                  <FormInput label="ผู้สูงอายุ" value={editUnitForm.elderlyPopulation} onChange={(value) => setEditUnitForm((current) => ({ ...current, elderlyPopulation: value }))} />
+                  <FormInput label="หมู่บ้าน" value={editUnitForm.villages} onChange={(value) => setEditUnitForm((current) => ({ ...current, villages: value }))} />
+                  <FormInput label="หลังคาเรือน" value={editUnitForm.households} onChange={(value) => setEditUnitForm((current) => ({ ...current, households: value }))} />
+                  <FormInput label="วัด/สำนักสงฆ์" value={editUnitForm.templeCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, templeCount: value }))} />
+                  <FormInput label="โรงเรียนประถม" value={editUnitForm.primarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, primarySchoolCount: value }))} />
+                  <FormInput label="โรงเรียนขยายโอกาส" value={editUnitForm.opportunitySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, opportunitySchoolCount: value }))} />
+                  <FormInput label="โรงเรียนมัธยม" value={editUnitForm.secondarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, secondarySchoolCount: value }))} />
+                  <FormInput label="ศูนย์พัฒนาเด็กเล็ก" value={editUnitForm.childDevelopmentCenterCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, childDevelopmentCenterCount: value }))} />
+                  <FormInput label="สถานีสุขภาพ" value={editUnitForm.healthStationCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthStationCount: value }))} />
+                </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingUnit(null)}>
                 ยกเลิก
               </Button>
@@ -1895,41 +1897,43 @@ export function SettingsDashboard() {
       </Dialog>
 
       <Dialog open={Boolean(editingPeriod)} onOpenChange={(open) => (!open ? setEditingPeriod(null) : null)}>
-        <DialogContent>
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle>เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</DialogTitle>
             <DialogDescription>เธเธฃเธฑเธเธเธทเนเธญเน€เธ”เธทเธญเธ เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ เธชเธดเนเธเธชเธธเธ” เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเธเธดเธ”เธเธงเธ”</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdatePeriod}>
-            <FormInput
-              label="เธเธทเนเธญเน€เธ”เธทเธญเธ"
-              value={editingPeriod?.monthNameTh || ""}
-              onChange={(value) => setEditingPeriod((current) => (current ? { ...current, monthNameTh: value } : current))}
-            />
-            <div className="grid gap-4 md:grid-cols-2">
+          <form className={dialogFormClassName} onSubmit={handleUpdatePeriod}>
+            <div className={dialogBodyClassName}>
               <FormInput
-                label="เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ"
-                type="date"
-                value={editingPeriod?.startDate ? new Date(editingPeriod.startDate).toISOString().slice(0, 10) : ""}
-                onChange={(value) => setEditingPeriod((current) => (current ? { ...current, startDate: value } : current))}
+                label="เธเธทเนเธญเน€เธ”เธทเธญเธ"
+                value={editingPeriod?.monthNameTh || ""}
+                onChange={(value) => setEditingPeriod((current) => (current ? { ...current, monthNameTh: value } : current))}
               />
-              <FormInput
-                label="เธงเธฑเธเธ—เธตเนเธชเธดเนเธเธชเธธเธ”"
-                type="date"
-                value={editingPeriod?.endDate ? new Date(editingPeriod.endDate).toISOString().slice(0, 10) : ""}
-                onChange={(value) => setEditingPeriod((current) => (current ? { ...current, endDate: value } : current))}
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput
+                  label="เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธ"
+                  type="date"
+                  value={editingPeriod?.startDate ? new Date(editingPeriod.startDate).toISOString().slice(0, 10) : ""}
+                  onChange={(value) => setEditingPeriod((current) => (current ? { ...current, startDate: value } : current))}
+                />
+                <FormInput
+                  label="เธงเธฑเธเธ—เธตเนเธชเธดเนเธเธชเธธเธ”"
+                  type="date"
+                  value={editingPeriod?.endDate ? new Date(editingPeriod.endDate).toISOString().slice(0, 10) : ""}
+                  onChange={(value) => setEditingPeriod((current) => (current ? { ...current, endDate: value } : current))}
+                />
+              </div>
+              <FormSelect
+                label="เธชเธ–เธฒเธเธฐเธเธงเธ”"
+                value={editingPeriod?.isClosed ? "closed" : "open"}
+                onChange={(value) => setEditingPeriod((current) => (current ? { ...current, isClosed: value === "closed" } : current))}
+                options={[
+                  { value: "open", label: "เน€เธเธดเธ”เธเธงเธ”" },
+                  { value: "closed", label: "เธเธดเธ”เธเธงเธ”" },
+                ]}
               />
             </div>
-            <FormSelect
-              label="เธชเธ–เธฒเธเธฐเธเธงเธ”"
-              value={editingPeriod?.isClosed ? "closed" : "open"}
-              onChange={(value) => setEditingPeriod((current) => (current ? { ...current, isClosed: value === "closed" } : current))}
-              options={[
-                { value: "open", label: "เน€เธเธดเธ”เธเธงเธ”" },
-                { value: "closed", label: "เธเธดเธ”เธเธงเธ”" },
-              ]}
-            />
-            <DialogFooter>
+            <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingPeriod(null)}>
                 เธขเธเน€เธฅเธดเธ
               </Button>
@@ -1942,47 +1946,49 @@ export function SettingsDashboard() {
       </Dialog>
 
       <Dialog open={Boolean(editingKpi)} onOpenChange={(open) => (!open ? setEditingKpi(null) : null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className={dialogContentWideClassName}>
           <DialogHeader>
             <DialogTitle>เนเธเนเนเธ KPI Master</DialogTitle>
             <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญ เธซเธกเธงเธ” เน€เธเนเธฒเธซเธกเธฒเธข เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธญเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ”</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdateKpiDefinition}>
-            <FormSelect
-              label="เธซเธกเธงเธ” KPI"
-              value={editKpiForm.categoryId}
-              onChange={(value) => setEditKpiForm((current) => ({ ...current, categoryId: value }))}
-              options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
-            />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="เธฃเธซเธฑเธช KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
-              <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
-            </div>
-            <FormInput label="เธเธทเนเธญ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
-            <div className="grid gap-4 md:grid-cols-3">
-              <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
+          <form className={dialogFormClassName} onSubmit={handleUpdateKpiDefinition}>
+            <div className={dialogBodyClassName}>
               <FormSelect
-                label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
-                value={editKpiForm.targetType}
-                onChange={(value) => setEditKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
+                label="เธซเธกเธงเธ” KPI"
+                value={editKpiForm.categoryId}
+                onChange={(value) => setEditKpiForm((current) => ({ ...current, categoryId: value }))}
+                options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="เธฃเธซเธฑเธช KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
+                <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
+              </div>
+              <FormInput label="เธเธทเนเธญ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
+              <div className="grid gap-4 md:grid-cols-3">
+                <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
+                <FormSelect
+                  label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
+                  value={editKpiForm.targetType}
+                  onChange={(value) => setEditKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
+                  options={[
+                    { value: "min", label: "min" },
+                    { value: "max", label: "max" },
+                    { value: "exact", label: "exact" },
+                  ]}
+                />
+                <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
+              </div>
+              <FormSelect
+                label="เธชเธ–เธฒเธเธฐ"
+                value={editKpiForm.isActive ? "active" : "inactive"}
+                onChange={(value) => setEditKpiForm((current) => ({ ...current, isActive: value === "active" }))}
                 options={[
-                  { value: "min", label: "min" },
-                  { value: "max", label: "max" },
-                  { value: "exact", label: "exact" },
+                  { value: "active", label: "active" },
+                  { value: "inactive", label: "inactive" },
                 ]}
               />
-              <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
             </div>
-            <FormSelect
-              label="เธชเธ–เธฒเธเธฐ"
-              value={editKpiForm.isActive ? "active" : "inactive"}
-              onChange={(value) => setEditKpiForm((current) => ({ ...current, isActive: value === "active" }))}
-              options={[
-                { value: "active", label: "active" },
-                { value: "inactive", label: "inactive" },
-              ]}
-            />
-            <DialogFooter>
+            <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingKpi(null)}>
                 เธขเธเน€เธฅเธดเธ
               </Button>
@@ -1995,28 +2001,30 @@ export function SettingsDashboard() {
       </Dialog>
 
       <Dialog open={Boolean(editingKpiCategory)} onOpenChange={(open) => (!open ? setEditingKpiCategory(null) : null)}>
-        <DialogContent>
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle>เนเธเนเนเธเธซเธกเธงเธ” KPI</DialogTitle>
             <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญเธซเธกเธงเธ” เธฅเธณเธ”เธฑเธ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdateKpiCategory}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput label="เธฃเธซเธฑเธชเธซเธกเธงเธ”" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
-              <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
+          <form className={dialogFormClassName} onSubmit={handleUpdateKpiCategory}>
+            <div className={dialogBodyClassName}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="เธฃเธซเธฑเธชเธซเธกเธงเธ”" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
+                <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
+              </div>
+              <FormInput label="เธเธทเนเธญเธซเธกเธงเธ”" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
+              <FormInput label="เธเธทเนเธญเธญเธฑเธเธเธคเธฉ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
+              <FormSelect
+                label="เธชเธ–เธฒเธเธฐ"
+                value={editKpiCategoryForm.isActive ? "active" : "inactive"}
+                onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, isActive: value === "active" }))}
+                options={[
+                  { value: "active", label: "active" },
+                  { value: "inactive", label: "inactive" },
+                ]}
+              />
             </div>
-            <FormInput label="เธเธทเนเธญเธซเธกเธงเธ”" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
-            <FormInput label="เธเธทเนเธญเธญเธฑเธเธเธคเธฉ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
-            <FormSelect
-              label="เธชเธ–เธฒเธเธฐ"
-              value={editKpiCategoryForm.isActive ? "active" : "inactive"}
-              onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, isActive: value === "active" }))}
-              options={[
-                { value: "active", label: "active" },
-                { value: "inactive", label: "inactive" },
-              ]}
-            />
-            <DialogFooter>
+            <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingKpiCategory(null)}>
                 เธขเธเน€เธฅเธดเธ
               </Button>
