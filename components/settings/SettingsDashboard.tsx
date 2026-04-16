@@ -315,7 +315,7 @@ function getKpiCategoryLabel(category: KpiCategoryItem) {
     return "PPFS";
   }
   if (category.code === "TTM") {
-    return "เนเธเธ—เธขเนเนเธเธเนเธ—เธข";
+    return "แพทย์แผนไทย";
   }
   return category.nameTh;
 }
