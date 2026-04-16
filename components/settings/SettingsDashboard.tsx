@@ -1478,26 +1478,26 @@ export function SettingsDashboard() {
           <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">เน€เธเธดเนเธก KPI Master</CardTitle>
-                <CardDescription>เธชเธฃเนเธฒเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ”เธซเธฅเธฑเธเนเธซเธกเนเธชเธณเธซเธฃเธฑเธเนเธเนเธเธฒเธเนเธเธฃเธฐเธเธ</CardDescription>
+                <CardTitle className="text-xl">เพิ่ม KPI Master</CardTitle>
+                <CardDescription>สร้างตัวชี้วัดหลักใหม่สำหรับใช้งานในระบบ</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleCreateKpiDefinition}>
                   <FormSelect
-                    label="เธซเธกเธงเธ” KPI"
+                    label="หมวด KPI"
                     value={createKpiForm.categoryId}
                     onChange={(value) => setCreateKpiForm((current) => ({ ...current, categoryId: value }))}
-                    options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
+                    options={[{ value: "", label: "เลือกหมวด" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
                   />
                   <div className="grid gap-4 md:grid-cols-2">
-                    <FormInput label="เธฃเธซเธฑเธช KPI" value={createKpiForm.code} onChange={(value) => setCreateKpiForm((current) => ({ ...current, code: value }))} />
-                    <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={createKpiForm.unit} onChange={(value) => setCreateKpiForm((current) => ({ ...current, unit: value }))} />
+                    <FormInput label="รหัส KPI" value={createKpiForm.code} onChange={(value) => setCreateKpiForm((current) => ({ ...current, code: value }))} />
+                    <FormInput label="หน่วยนับ" value={createKpiForm.unit} onChange={(value) => setCreateKpiForm((current) => ({ ...current, unit: value }))} />
                   </div>
-                  <FormInput label="เธเธทเนเธญ KPI" value={createKpiForm.nameTh} onChange={(value) => setCreateKpiForm((current) => ({ ...current, nameTh: value }))} />
+                  <FormInput label="ชื่อ KPI" value={createKpiForm.nameTh} onChange={(value) => setCreateKpiForm((current) => ({ ...current, nameTh: value }))} />
                   <div className="grid gap-4 md:grid-cols-3">
-                    <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={createKpiForm.targetValue} onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetValue: value }))} />
+                    <FormInput label="ค่าเป้าหมาย" value={createKpiForm.targetValue} onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetValue: value }))} />
                     <FormSelect
-                      label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
+                      label="ประเภทเป้าหมาย"
                       value={createKpiForm.targetType}
                       onChange={(value) => setCreateKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
                       options={[
@@ -1506,11 +1506,11 @@ export function SettingsDashboard() {
                         { value: "exact", label: "exact" },
                       ]}
                     />
-                    <FormInput label="เธฅเธณเธ”เธฑเธ" value={createKpiForm.displayOrder} onChange={(value) => setCreateKpiForm((current) => ({ ...current, displayOrder: value }))} />
+                    <FormInput label="ลำดับ" value={createKpiForm.displayOrder} onChange={(value) => setCreateKpiForm((current) => ({ ...current, displayOrder: value }))} />
                   </div>
                   <Button type="submit" className="w-full" disabled={isSaving || !createKpiForm.categoryId || !createKpiForm.code || !createKpiForm.nameTh}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เน€เธเธดเนเธก KPI Master"}
+                    {isSaving ? "กำลังบันทึก..." : "เพิ่ม KPI Master"}
                   </Button>
                 </form>
               </CardContent>
