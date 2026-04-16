@@ -1559,11 +1559,11 @@ export function SettingsDashboard() {
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="sm" onClick={() => openEditKpiDialog(item)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                เนเธเนเนเธ
+                                แก้ไข
                               </Button>
                               <Button variant="outline" size="sm" onClick={() => void handleDeleteKpiDefinition(item)} disabled={item._count.results > 0}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                เธฅเธ
+                                ลบ
                               </Button>
                             </div>
                           </td>
@@ -1782,26 +1782,26 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingKpi)} onOpenChange={(open) => (!open ? setEditingKpi(null) : null)}>
         <DialogContent className={dialogContentWideClassName}>
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธ KPI Master</DialogTitle>
-            <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญ เธซเธกเธงเธ” เน€เธเนเธฒเธซเธกเธฒเธข เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธญเธเธ•เธฑเธงเธเธตเนเธงเธฑเธ”</DialogDescription>
+            <DialogTitle>แก้ไข KPI Master</DialogTitle>
+            <DialogDescription>ปรับรหัส ชื่อ หมวด เป้าหมาย และสถานะของตัวชี้วัด</DialogDescription>
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdateKpiDefinition}>
             <div className={dialogBodyClassName}>
               <FormSelect
-                label="เธซเธกเธงเธ” KPI"
+                label="หมวด KPI"
                 value={editKpiForm.categoryId}
                 onChange={(value) => setEditKpiForm((current) => ({ ...current, categoryId: value }))}
-                options={[{ value: "", label: "เน€เธฅเธทเธญเธเธซเธกเธงเธ”" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
+                options={[{ value: "", label: "เลือกหมวด" }, ...kpiCategories.map((item) => ({ value: String(item.id), label: getKpiCategoryLabel(item) }))]}
               />
               <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="เธฃเธซเธฑเธช KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
-                <FormInput label="เธซเธเนเธงเธขเธเธฑเธ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
+                <FormInput label="รหัส KPI" value={editKpiForm.code} onChange={(value) => setEditKpiForm((current) => ({ ...current, code: value }))} />
+                <FormInput label="หน่วยนับ" value={editKpiForm.unit} onChange={(value) => setEditKpiForm((current) => ({ ...current, unit: value }))} />
               </div>
-              <FormInput label="เธเธทเนเธญ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
+              <FormInput label="ชื่อ KPI" value={editKpiForm.nameTh} onChange={(value) => setEditKpiForm((current) => ({ ...current, nameTh: value }))} />
               <div className="grid gap-4 md:grid-cols-3">
-                <FormInput label="เธเนเธฒเน€เธเนเธฒเธซเธกเธฒเธข" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
+                <FormInput label="ค่าเป้าหมาย" value={editKpiForm.targetValue} onChange={(value) => setEditKpiForm((current) => ({ ...current, targetValue: value }))} />
                 <FormSelect
-                  label="เธเธฃเธฐเน€เธ เธ—เน€เธเนเธฒเธซเธกเธฒเธข"
+                  label="ประเภทเป้าหมาย"
                   value={editKpiForm.targetType}
                   onChange={(value) => setEditKpiForm((current) => ({ ...current, targetType: value as "min" | "max" | "exact" }))}
                   options={[
@@ -1810,24 +1810,24 @@ export function SettingsDashboard() {
                     { value: "exact", label: "exact" },
                   ]}
                 />
-                <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
+                <FormInput label="ลำดับ" value={editKpiForm.displayOrder} onChange={(value) => setEditKpiForm((current) => ({ ...current, displayOrder: value }))} />
               </div>
               <FormSelect
-                label="เธชเธ–เธฒเธเธฐ"
+                label="สถานะ"
                 value={editKpiForm.isActive ? "active" : "inactive"}
                 onChange={(value) => setEditKpiForm((current) => ({ ...current, isActive: value === "active" }))}
                 options={[
-                  { value: "active", label: "active" },
-                  { value: "inactive", label: "inactive" },
+                  { value: "active", label: "ใช้งาน" },
+                  { value: "inactive", label: "ปิดใช้งาน" },
                 ]}
               />
             </div>
             <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingKpi(null)}>
-                เธขเธเน€เธฅเธดเธ
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธ KPI Master"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึก KPI Master"}
               </Button>
             </DialogFooter>
           </form>
@@ -1837,33 +1837,33 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingKpiCategory)} onOpenChange={(open) => (!open ? setEditingKpiCategory(null) : null)}>
         <DialogContent className={dialogContentClassName}>
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธเธซเธกเธงเธ” KPI</DialogTitle>
-            <DialogDescription>เธเธฃเธฑเธเธฃเธซเธฑเธช เธเธทเนเธญเธซเธกเธงเธ” เธฅเธณเธ”เธฑเธ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
+            <DialogTitle>แก้ไขหมวด KPI</DialogTitle>
+            <DialogDescription>ปรับรหัส ชื่อหมวด ลำดับ และสถานะการใช้งาน</DialogDescription>
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdateKpiCategory}>
             <div className={dialogBodyClassName}>
               <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="เธฃเธซเธฑเธชเธซเธกเธงเธ”" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
-                <FormInput label="เธฅเธณเธ”เธฑเธ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
+                <FormInput label="รหัสหมวด" value={editKpiCategoryForm.code} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, code: value }))} />
+                <FormInput label="ลำดับ" value={editKpiCategoryForm.displayOrder} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, displayOrder: value }))} />
               </div>
-              <FormInput label="เธเธทเนเธญเธซเธกเธงเธ”" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
-              <FormInput label="เธเธทเนเธญเธญเธฑเธเธเธคเธฉ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
+              <FormInput label="ชื่อหมวด" value={editKpiCategoryForm.nameTh} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameTh: value }))} />
+              <FormInput label="ชื่ออังกฤษ" value={editKpiCategoryForm.nameEn} onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, nameEn: value }))} />
               <FormSelect
-                label="เธชเธ–เธฒเธเธฐ"
+                label="สถานะ"
                 value={editKpiCategoryForm.isActive ? "active" : "inactive"}
                 onChange={(value) => setEditKpiCategoryForm((current) => ({ ...current, isActive: value === "active" }))}
                 options={[
-                  { value: "active", label: "active" },
-                  { value: "inactive", label: "inactive" },
+                  { value: "active", label: "ใช้งาน" },
+                  { value: "inactive", label: "ปิดใช้งาน" },
                 ]}
               />
             </div>
             <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingKpiCategory(null)}>
-                เธขเธเน€เธฅเธดเธ
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธซเธกเธงเธ” KPI"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกหมวด KPI"}
               </Button>
             </DialogFooter>
           </form>
