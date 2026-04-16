@@ -293,6 +293,12 @@ const emptyKpiCategoryForm: KpiCategoryFormState = {
   isActive: true,
 };
 
+const dialogContentClassName = "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg";
+const dialogContentWideClassName = "flex max-h-[90vh] flex-col overflow-hidden sm:max-w-4xl";
+const dialogFormClassName = "flex min-h-0 flex-1 flex-col";
+const dialogBodyClassName = "min-h-0 flex-1 space-y-4 overflow-y-auto pr-1";
+const dialogFooterClassName = "border-t bg-background pt-4";
+
 const roleLabels: Record<UserItem["role"], string> = {
   admin: "ผู้ดูแลระบบ",
   manager: "ผู้จัดการ",
@@ -1747,39 +1753,41 @@ export function SettingsDashboard() {
       </Tabs>
 
       <Dialog open={Boolean(editingUser)} onOpenChange={(open) => (!open ? setEditingUser(null) : null)}>
-        <DialogContent>
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle>เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเน</DialogTitle>
             <DialogDescription>เธญเธฑเธเน€เธ”เธ•เธเธทเนเธญ เธชเธดเธ—เธเธดเน เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdateUser}>
-            <FormInput label="เธเธทเนเธญ - เธเธฒเธกเธชเธเธธเธฅ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
-            <FormInput label="เธญเธตเน€เธกเธฅ" value={editForm.email} onChange={() => undefined} disabled />
-            <FormSelect
-              label="เธชเธดเธ—เธเธดเนเธเธฒเธฃเนเธเนเธเธฒเธ"
-              value={editForm.role}
-              onChange={(value) => setEditForm((current) => ({ ...current, role: value as UserItem["role"] }))}
-              options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
-            />
-            <FormSelect
-              label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ"
-              value={editForm.healthUnitId}
-              onChange={(value) => setEditForm((current) => ({ ...current, healthUnitId: value }))}
-              options={[
-                { value: "", label: "เนเธกเนเธเธนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ" },
-                ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` })),
-              ]}
-            />
-            <FormSelect
-              label="เธชเธ–เธฒเธเธฐ"
-              value={editForm.isActive ? "active" : "inactive"}
-              onChange={(value) => setEditForm((current) => ({ ...current, isActive: value === "active" }))}
-              options={[
-                { value: "active", label: "เนเธเนเธเธฒเธ" },
-                { value: "inactive", label: "เธเธดเธ”เนเธเนเธเธฒเธ" },
-              ]}
-            />
-            <DialogFooter>
+          <form className={dialogFormClassName} onSubmit={handleUpdateUser}>
+            <div className={dialogBodyClassName}>
+              <FormInput label="เธเธทเนเธญ - เธเธฒเธกเธชเธเธธเธฅ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
+              <FormInput label="เธญเธตเน€เธกเธฅ" value={editForm.email} onChange={() => undefined} disabled />
+              <FormSelect
+                label="เธชเธดเธ—เธเธดเนเธเธฒเธฃเนเธเนเธเธฒเธ"
+                value={editForm.role}
+                onChange={(value) => setEditForm((current) => ({ ...current, role: value as UserItem["role"] }))}
+                options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
+              />
+              <FormSelect
+                label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ"
+                value={editForm.healthUnitId}
+                onChange={(value) => setEditForm((current) => ({ ...current, healthUnitId: value }))}
+                options={[
+                  { value: "", label: "เนเธกเนเธเธนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ" },
+                  ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` })),
+                ]}
+              />
+              <FormSelect
+                label="เธชเธ–เธฒเธเธฐ"
+                value={editForm.isActive ? "active" : "inactive"}
+                onChange={(value) => setEditForm((current) => ({ ...current, isActive: value === "active" }))}
+                options={[
+                  { value: "active", label: "เนเธเนเธเธฒเธ" },
+                  { value: "inactive", label: "เธเธดเธ”เนเธเนเธเธฒเธ" },
+                ]}
+              />
+            </div>
+            <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
                 เธขเธเน€เธฅเธดเธ
               </Button>
