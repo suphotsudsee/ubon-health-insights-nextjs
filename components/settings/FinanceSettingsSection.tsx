@@ -639,7 +639,6 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">เมนูการเงิน</CardTitle>
-          <CardDescription>ย้ายเมนูบันทึกรายรับ บันทึกรายจ่าย และรายการข้อมูลมาไว้ใน Settings &gt; การเงิน</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button asChild>
@@ -808,7 +807,6 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">เพิ่มบันทึกการเงินรายหน่วยบริการ</CardTitle>
-              <CardDescription>บันทึกรายรับและรายจ่ายของแต่ละหน่วยบริการตามงวดเดือน แบบเดียวกับการเพิ่ม KPI รายหน่วยบริการ</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleCreate}>
