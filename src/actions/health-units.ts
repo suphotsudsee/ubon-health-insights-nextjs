@@ -436,9 +436,18 @@ export async function deleteHealthUnit(id: number): Promise<ApiResponse> {
       existing._count.demographics
 
     if (referenceCount > 0) {
+      const reasons = [
+        existing._count.users > 0 ? `ผู้ใช้ ${existing._count.users}` : null,
+        existing._count.kpiResults > 0 ? `KPI ${existing._count.kpiResults}` : null,
+        existing._count.financeRecords > 0 ? `การเงิน ${existing._count.financeRecords}` : null,
+        existing._count.demographics > 0 ? `ประชากร ${existing._count.demographics}` : null,
+      ]
+        .filter(Boolean)
+        .join(", ")
+
       return {
         success: false,
-        error: 'Cannot delete health unit because it is still referenced by users or operational data',
+        error: `ไม่สามารถลบหน่วยบริการได้ เพราะยังมีข้อมูลอ้างอิงอยู่: ${reasons}`,
       }
     }
 
