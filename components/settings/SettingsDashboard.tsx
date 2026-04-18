@@ -157,6 +157,31 @@ type KpiDefinitionAdminItem = {
   };
 };
 
+type KpiResultItem = {
+  id: number;
+  kpiId: number;
+  kpiCode: string;
+  kpiNameTh: string;
+  categoryId: number;
+  categoryCode: string;
+  categoryNameTh: string;
+  healthUnitId: number;
+  unitCode: string;
+  unitName: string;
+  fiscalPeriodId: number;
+  fiscalYear: number;
+  quarter: number;
+  month: number;
+  monthNameTh: string;
+  targetValue: number;
+  actualValue: number;
+  percentage: number;
+  notes: string | null;
+  reviewStatus: "draft" | "submitted" | "approved" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+};
+
 type UserFormState = {
   email: string;
   password: string;
@@ -223,6 +248,15 @@ type KpiCategoryFormState = {
   nameEn: string;
   displayOrder: string;
   isActive: boolean;
+};
+
+type KpiResultFormState = {
+  healthUnitId: string;
+  kpiId: string;
+  fiscalPeriodId: string;
+  targetValue: string;
+  actualValue: string;
+  notes: string;
 };
 
 const emptyUserForm: UserFormState = {
@@ -293,6 +327,15 @@ const emptyKpiCategoryForm: KpiCategoryFormState = {
   isActive: true,
 };
 
+const emptyKpiResultForm: KpiResultFormState = {
+  healthUnitId: "",
+  kpiId: "",
+  fiscalPeriodId: "",
+  targetValue: "",
+  actualValue: "",
+  notes: "",
+};
+
 const dialogContentClassName = "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg";
 const dialogContentWideClassName = "flex max-h-[90vh] flex-col overflow-hidden sm:max-w-4xl";
 const dialogFormClassName = "flex min-h-0 flex-1 flex-col";
@@ -337,6 +380,32 @@ function getStatusBadgeClass(status: "active" | "inactive") {
   return status === "active" ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600";
 }
 
+function getReviewStatusBadgeClass(status: KpiResultItem["reviewStatus"]) {
+  switch (status) {
+    case "approved":
+      return "bg-green-100 text-green-700";
+    case "submitted":
+      return "bg-amber-100 text-amber-700";
+    case "rejected":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-slate-200 text-slate-600";
+  }
+}
+
+function getReviewStatusLabel(status: KpiResultItem["reviewStatus"]) {
+  switch (status) {
+    case "approved":
+      return "อนุมัติ";
+    case "submitted":
+      return "ส่งตรวจ";
+    case "rejected":
+      return "ตีกลับ";
+    default:
+      return "ฉบับร่าง";
+  }
+}
+
 export function SettingsDashboard() {
   const { data: session, status } = useSession();
   const currentUser = session?.user as
@@ -353,10 +422,12 @@ export function SettingsDashboard() {
   const [fiscalPeriods, setFiscalPeriods] = useState<FiscalPeriodItem[]>([]);
   const [kpiDefinitions, setKpiDefinitions] = useState<KpiDefinitionAdminItem[]>([]);
   const [kpiCategories, setKpiCategories] = useState<KpiCategoryItem[]>([]);
+  const [kpiResults, setKpiResults] = useState<KpiResultItem[]>([]);
   const [currentPeriod, setCurrentPeriod] = useState<FiscalPeriodItem | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isKpiResultsLoading, setIsKpiResultsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [createForm, setCreateForm] = useState<UserFormState>(emptyUserForm);
@@ -375,6 +446,13 @@ export function SettingsDashboard() {
   const [editKpiForm, setEditKpiForm] = useState<KpiDefinitionFormState>(emptyKpiForm);
   const [editingKpiCategory, setEditingKpiCategory] = useState<KpiCategoryItem | null>(null);
   const [editKpiCategoryForm, setEditKpiCategoryForm] = useState<KpiCategoryFormState>(emptyKpiCategoryForm);
+  const [kpiResultSearch, setKpiResultSearch] = useState("");
+  const [kpiResultYearFilter, setKpiResultYearFilter] = useState("");
+  const [kpiResultUnitFilter, setKpiResultUnitFilter] = useState("");
+  const [kpiResultCategoryFilter, setKpiResultCategoryFilter] = useState("");
+  const [createKpiResultForm, setCreateKpiResultForm] = useState<KpiResultFormState>(emptyKpiResultForm);
+  const [editingKpiResult, setEditingKpiResult] = useState<KpiResultItem | null>(null);
+  const [editKpiResultForm, setEditKpiResultForm] = useState<KpiResultFormState>(emptyKpiResultForm);
   const [createUnitForm, setCreateUnitForm] = useState<UnitFormState>(emptyUnitForm);
   const [editingUnit, setEditingUnit] = useState<HealthUnitItem | null>(null);
   const [editUnitForm, setEditUnitForm] = useState<UnitFormState>(emptyUnitForm);
@@ -411,6 +489,44 @@ export function SettingsDashboard() {
       } else {
         setEditSubdistricts([]);
       }
+    }
+  }
+
+  async function loadKpiResults(filters?: {
+    fiscalYear?: string;
+    healthUnitId?: string;
+    categoryId?: string;
+  }) {
+    try {
+      setIsKpiResultsLoading(true);
+
+      const params = new URLSearchParams({
+        pageSize: "500",
+        sortBy: "updatedAt",
+        sortOrder: "desc",
+      });
+
+      const fiscalYear = filters?.fiscalYear ?? kpiResultYearFilter;
+      const healthUnitId = filters?.healthUnitId ?? kpiResultUnitFilter;
+      const categoryId = filters?.categoryId ?? kpiResultCategoryFilter;
+
+      if (fiscalYear) {
+        params.set("fiscalYear", fiscalYear);
+      }
+      if (healthUnitId) {
+        params.set("healthUnitId", healthUnitId);
+      }
+      if (categoryId) {
+        params.set("categoryId", categoryId);
+      }
+
+      const data = await fetchJson<{ results: KpiResultItem[]; total: number }>(`/api/kpi/results?${params.toString()}`);
+      setKpiResults(data.results);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล KPI รายหน่วยบริการ");
+      setKpiResults([]);
+    } finally {
+      setIsKpiResultsLoading(false);
     }
   }
 
@@ -454,12 +570,28 @@ export function SettingsDashboard() {
   }, []);
 
   useEffect(() => {
+    if (currentPeriod && !createKpiResultForm.fiscalPeriodId) {
+      setCreateKpiResultForm((current) => ({ ...current, fiscalPeriodId: String(currentPeriod.id ?? "") }));
+    }
+    if (currentPeriod && !kpiResultYearFilter) {
+      setKpiResultYearFilter(String(currentPeriod.fiscalYear));
+    }
+  }, [currentPeriod, createKpiResultForm.fiscalPeriodId, kpiResultYearFilter]);
+
+  useEffect(() => {
     void loadSubdistricts(createUnitForm.amphoeId, "create");
   }, [createUnitForm.amphoeId]);
 
   useEffect(() => {
     void loadSubdistricts(editUnitForm.amphoeId, "edit");
   }, [editUnitForm.amphoeId]);
+
+  useEffect(() => {
+    if (!currentPeriod && !kpiResultYearFilter) {
+      return;
+    }
+    void loadKpiResults();
+  }, [currentPeriod, kpiResultYearFilter, kpiResultUnitFilter, kpiResultCategoryFilter]);
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -510,9 +642,41 @@ export function SettingsDashboard() {
     });
   }, [kpiDefinitions, kpiSearch]);
 
+  const filteredKpiResults = useMemo(() => {
+    const keyword = kpiResultSearch.trim().toLowerCase();
+    if (!keyword) {
+      return kpiResults;
+    }
+
+    return kpiResults.filter((item) => {
+      return (
+        item.kpiCode.toLowerCase().includes(keyword) ||
+        item.kpiNameTh.toLowerCase().includes(keyword) ||
+        item.unitCode.toLowerCase().includes(keyword) ||
+        item.unitName.toLowerCase().includes(keyword) ||
+        item.categoryNameTh.toLowerCase().includes(keyword)
+      );
+    });
+  }, [kpiResultSearch, kpiResults]);
+
   function resetFeedback() {
     setMessage("");
     setError("");
+  }
+
+  function fillKpiResultTargetValue(
+    formSetter: React.Dispatch<React.SetStateAction<KpiResultFormState>>,
+    kpiId: string
+  ) {
+    const definition = kpiDefinitions.find((item) => String(item.id) === kpiId);
+    formSetter((current) => ({
+      ...current,
+      kpiId,
+      targetValue:
+        definition?.targetValue !== null && definition?.targetValue !== undefined
+          ? String(definition.targetValue)
+          : current.targetValue,
+    }));
   }
 
   async function handleCreateUser(event: React.FormEvent<HTMLFormElement>) {
@@ -1175,6 +1339,116 @@ export function SettingsDashboard() {
     }
   }
 
+  async function handleCreateKpiResult(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    resetFeedback();
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/kpi/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          healthUnitId: Number(createKpiResultForm.healthUnitId),
+          kpiId: Number(createKpiResultForm.kpiId),
+          fiscalPeriodId: Number(createKpiResultForm.fiscalPeriodId),
+          targetValue: Number(createKpiResultForm.targetValue),
+          actualValue: Number(createKpiResultForm.actualValue),
+          notes: createKpiResultForm.notes || undefined,
+        }),
+      });
+      const body = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถบันทึก KPI รายหน่วยบริการได้");
+      }
+
+      setMessage(body.message || "เพิ่ม KPI รายหน่วยบริการเรียบร้อยแล้ว");
+      setCreateKpiResultForm({
+        ...emptyKpiResultForm,
+        fiscalPeriodId: createKpiResultForm.fiscalPeriodId || String(currentPeriod?.id ?? ""),
+      });
+      await Promise.all([loadData(), loadKpiResults()]);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถบันทึก KPI รายหน่วยบริการได้");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function openEditKpiResultDialog(item: KpiResultItem) {
+    resetFeedback();
+    setEditingKpiResult(item);
+    setEditKpiResultForm({
+      healthUnitId: String(item.healthUnitId),
+      kpiId: String(item.kpiId),
+      fiscalPeriodId: String(item.fiscalPeriodId),
+      targetValue: String(item.targetValue),
+      actualValue: String(item.actualValue),
+      notes: item.notes || "",
+    });
+  }
+
+  async function handleUpdateKpiResult(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingKpiResult) {
+      return;
+    }
+
+    resetFeedback();
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/kpi/results/${editingKpiResult.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetValue: Number(editKpiResultForm.targetValue),
+          actualValue: Number(editKpiResultForm.actualValue),
+          notes: editKpiResultForm.notes || undefined,
+        }),
+      });
+      const body = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถแก้ไข KPI รายหน่วยบริการได้");
+      }
+
+      setMessage(body.message || "แก้ไข KPI รายหน่วยบริการเรียบร้อยแล้ว");
+      setEditingKpiResult(null);
+      await Promise.all([loadData(), loadKpiResults()]);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไข KPI รายหน่วยบริการได้");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteKpiResult(item: KpiResultItem) {
+    if (!window.confirm(`ยืนยันการลบ KPI ${item.kpiCode} ของ ${item.unitName} ?`)) {
+      return;
+    }
+
+    resetFeedback();
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/kpi/results/${item.id}`, { method: "DELETE" });
+      const body = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถลบ KPI รายหน่วยบริการได้");
+      }
+
+      setMessage(body.message || "ลบ KPI รายหน่วยบริการเรียบร้อยแล้ว");
+      if (editingKpiResult?.id === item.id) {
+        setEditingKpiResult(null);
+      }
+      await Promise.all([loadData(), loadKpiResults()]);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบ KPI รายหน่วยบริการได้");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <section className="flex flex-col gap-4 rounded-3xl border bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground shadow-lg lg:flex-row lg:items-end lg:justify-between">
@@ -1575,6 +1849,198 @@ export function SettingsDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            <SummaryCard icon={MapPinned} label="ผล KPI ที่แสดง" value={formatNumber(filteredKpiResults.length)} />
+            <SummaryCard icon={Building2} label="หน่วยบริการที่มีข้อมูล" value={formatNumber(new Set(filteredKpiResults.map((item) => item.healthUnitId)).size)} />
+            <SummaryCard icon={CalendarRange} label="ฉบับร่าง" value={formatNumber(filteredKpiResults.filter((item) => item.reviewStatus === "draft").length)} />
+            <SummaryCard icon={Users} label="ผ่านเป้าเฉลี่ย" value={`${filteredKpiResults.length ? Math.round(filteredKpiResults.reduce((sum, item) => sum + item.percentage, 0) / filteredKpiResults.length) : 0}%`} />
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">เพิ่ม KPI รายหน่วยบริการ</CardTitle>
+                <CardDescription>บันทึกผลลัพธ์ KPI ของแต่ละหน่วยบริการตามงวดงบประมาณ</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-4" onSubmit={handleCreateKpiResult}>
+                  <FormSelect
+                    label="หน่วยบริการ"
+                    value={createKpiResultForm.healthUnitId}
+                    onChange={(value) => setCreateKpiResultForm((current) => ({ ...current, healthUnitId: value }))}
+                    options={[{ value: "", label: "เลือกหน่วยบริการ" }, ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` }))]}
+                  />
+                  <FormSelect
+                    label="งวดงบประมาณ"
+                    value={createKpiResultForm.fiscalPeriodId}
+                    onChange={(value) => setCreateKpiResultForm((current) => ({ ...current, fiscalPeriodId: value }))}
+                    options={[
+                      { value: "", label: "เลือกงวด" },
+                      ...fiscalPeriods.map((period) => ({
+                        value: String(period.id),
+                        label: `ปี ${period.fiscalYear} Q${period.quarter} เดือน ${period.month} ${period.monthNameTh || ""}`.trim(),
+                      })),
+                    ]}
+                  />
+                  <FormSelect
+                    label="KPI"
+                    value={createKpiResultForm.kpiId}
+                    onChange={(value) => fillKpiResultTargetValue(setCreateKpiResultForm, value)}
+                    options={[{ value: "", label: "เลือก KPI" }, ...kpiDefinitions.filter((item) => item.isActive && !item.isDeleted).map((item) => ({ value: String(item.id), label: `${item.code} - ${item.nameTh}` }))]}
+                  />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormInput label="ค่าเป้าหมาย" value={createKpiResultForm.targetValue} onChange={(value) => setCreateKpiResultForm((current) => ({ ...current, targetValue: value }))} />
+                    <FormInput label="ค่าผลงาน" value={createKpiResultForm.actualValue} onChange={(value) => setCreateKpiResultForm((current) => ({ ...current, actualValue: value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">หมายเหตุ</label>
+                    <textarea
+                      value={createKpiResultForm.notes}
+                      onChange={(event) => setCreateKpiResultForm((current) => ({ ...current, notes: event.target.value }))}
+                      rows={4}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={
+                      isSaving ||
+                      !createKpiResultForm.healthUnitId ||
+                      !createKpiResultForm.kpiId ||
+                      !createKpiResultForm.fiscalPeriodId ||
+                      createKpiResultForm.targetValue === "" ||
+                      createKpiResultForm.actualValue === ""
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {isSaving ? "กำลังบันทึก..." : "เพิ่ม KPI รายหน่วยบริการ"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="gap-4">
+                <div className="md:flex md:items-center md:justify-between">
+                  <div>
+                    <CardTitle className="text-xl">จัดการ KPI รายหน่วยบริการ</CardTitle>
+                    <CardDescription>ค้นหา กรอง แก้ไข และลบผล KPI ของแต่ละหน่วยบริการ</CardDescription>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    value={kpiResultSearch}
+                    onChange={(event) => setKpiResultSearch(event.target.value)}
+                    placeholder="ค้นหา KPI หรือหน่วยบริการ"
+                    className="w-full md:w-72"
+                  />
+                  <select
+                    value={kpiResultYearFilter}
+                    onChange={(event) => setKpiResultYearFilter(event.target.value)}
+                    className="flex h-10 w-36 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">ทุกปีงบประมาณ</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={kpiResultCategoryFilter}
+                    onChange={(event) => setKpiResultCategoryFilter(event.target.value)}
+                    className="flex h-10 w-44 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">ทุกหมวด KPI</option>
+                    {kpiCategories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {getKpiCategoryLabel(item)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={kpiResultUnitFilter}
+                    onChange={(event) => setKpiResultUnitFilter(event.target.value)}
+                    className="flex h-10 min-w-56 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">ทุกหน่วยบริการ</option>
+                    {units.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.code} - {unit.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button variant="outline" size="icon" onClick={() => void loadKpiResults()} disabled={isKpiResultsLoading}>
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1180px] text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="pb-3 font-medium">หน่วยบริการ</th>
+                        <th className="pb-3 font-medium">KPI</th>
+                        <th className="pb-3 font-medium">งวด</th>
+                        <th className="pb-3 font-medium">เป้าหมาย</th>
+                        <th className="pb-3 font-medium">ผลงาน</th>
+                        <th className="pb-3 font-medium">% ผลลัพธ์</th>
+                        <th className="pb-3 font-medium">สถานะ</th>
+                        <th className="pb-3 font-medium text-right">จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredKpiResults.map((item) => (
+                        <tr key={item.id} className="border-b last:border-b-0">
+                          <td className="py-4">
+                            <div className="font-medium">{item.unitName}</div>
+                            <div className="text-muted-foreground">{item.unitCode}</div>
+                          </td>
+                          <td className="py-4">
+                            <div className="font-medium">{item.kpiNameTh}</div>
+                            <div className="text-muted-foreground">
+                              {item.kpiCode} / {item.categoryNameTh}
+                            </div>
+                          </td>
+                          <td className="py-4 text-muted-foreground">
+                            ปี {item.fiscalYear} Q{item.quarter} เดือน {item.month}
+                          </td>
+                          <td className="py-4">{item.targetValue}</td>
+                          <td className="py-4">{item.actualValue}</td>
+                          <td className="py-4">{item.percentage}%</td>
+                          <td className="py-4">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getReviewStatusBadgeClass(item.reviewStatus)}`}>
+                              {getReviewStatusLabel(item.reviewStatus)}
+                            </span>
+                          </td>
+                          <td className="py-4">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="sm" onClick={() => openEditKpiResultDialog(item)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                แก้ไข
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => void handleDeleteKpiResult(item)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                ลบ
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!isKpiResultsLoading && filteredKpiResults.length === 0 ? (
+                  <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+                    ไม่พบข้อมูล KPI รายหน่วยบริการตามเงื่อนไขที่เลือก
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="finance" className="space-y-6">
           <FinanceSettingsSection
@@ -1828,6 +2294,50 @@ export function SettingsDashboard() {
               </Button>
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? "กำลังบันทึก..." : "บันทึก KPI Master"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingKpiResult)} onOpenChange={(open) => (!open ? setEditingKpiResult(null) : null)}>
+        <DialogContent className={dialogContentWideClassName}>
+          <DialogHeader>
+            <DialogTitle>แก้ไข KPI รายหน่วยบริการ</DialogTitle>
+            <DialogDescription>ปรับค่าเป้าหมาย ค่าผลงาน และหมายเหตุของ KPI ที่บันทึกไว้</DialogDescription>
+          </DialogHeader>
+          <form className={dialogFormClassName} onSubmit={handleUpdateKpiResult}>
+            <div className={dialogBodyClassName}>
+              <div className="grid gap-4 md:grid-cols-3">
+                <FormInput label="หน่วยบริการ" value={editingKpiResult ? `${editingKpiResult.unitCode} - ${editingKpiResult.unitName}` : ""} onChange={() => undefined} disabled />
+                <FormInput label="KPI" value={editingKpiResult ? `${editingKpiResult.kpiCode} - ${editingKpiResult.kpiNameTh}` : ""} onChange={() => undefined} disabled />
+                <FormInput
+                  label="งวดงบประมาณ"
+                  value={editingKpiResult ? `ปี ${editingKpiResult.fiscalYear} Q${editingKpiResult.quarter} เดือน ${editingKpiResult.month}` : ""}
+                  onChange={() => undefined}
+                  disabled
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="ค่าเป้าหมาย" value={editKpiResultForm.targetValue} onChange={(value) => setEditKpiResultForm((current) => ({ ...current, targetValue: value }))} />
+                <FormInput label="ค่าผลงาน" value={editKpiResultForm.actualValue} onChange={(value) => setEditKpiResultForm((current) => ({ ...current, actualValue: value }))} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">หมายเหตุ</label>
+                <textarea
+                  value={editKpiResultForm.notes}
+                  onChange={(event) => setEditKpiResultForm((current) => ({ ...current, notes: event.target.value }))}
+                  rows={5}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+            </div>
+            <DialogFooter className={dialogFooterClassName}>
+              <Button type="button" variant="outline" onClick={() => setEditingKpiResult(null)}>
+                ยกเลิก
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "กำลังบันทึก..." : "บันทึก KPI รายหน่วยบริการ"}
               </Button>
             </DialogFooter>
           </form>
