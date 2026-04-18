@@ -433,6 +433,22 @@ function getReviewStatusLabel(status: KpiResultItem["reviewStatus"]) {
   }
 }
 
+function parseNumberInput(value: string) {
+  return Number(value || "0");
+}
+
+function isZeroDemographicForm(form: Pick<UnitFormState, "male" | "female" | "elderlyPopulation" | "totalPopulation" | "villages" | "households" | "healthVolunteers">) {
+  return (
+    parseNumberInput(form.male) === 0 &&
+    parseNumberInput(form.female) === 0 &&
+    parseNumberInput(form.elderlyPopulation) === 0 &&
+    parseNumberInput(form.totalPopulation) === 0 &&
+    parseNumberInput(form.villages) === 0 &&
+    parseNumberInput(form.households) === 0 &&
+    parseNumberInput(form.healthVolunteers) === 0
+  );
+}
+
 function RoleDescriptionList({ selectedRole }: { selectedRole?: UserItem["role"] }) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
@@ -953,19 +969,19 @@ export function SettingsDashboard() {
       }
 
       setMessage(body.message || "เพิ่มหน่วยบริการเรียบร้อยแล้ว");
-      if (currentPeriod?.id && body.data?.id) {
+      if (currentPeriod?.id && body.data?.id && !isZeroDemographicForm(createUnitForm)) {
         const demographicsResponse = await fetch(`/api/health-units/${body.data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fiscalPeriodId: currentPeriod.id,
-            male: Number(createUnitForm.male || "0"),
-            female: Number(createUnitForm.female || "0"),
-            elderlyPopulation: Number(createUnitForm.elderlyPopulation || "0"),
-            totalPopulation: Number(createUnitForm.totalPopulation || "0"),
-            villages: Number(createUnitForm.villages || "0"),
-            households: Number(createUnitForm.households || "0"),
-            healthVolunteers: Number(createUnitForm.healthVolunteers || "0"),
+            male: parseNumberInput(createUnitForm.male),
+            female: parseNumberInput(createUnitForm.female),
+            elderlyPopulation: parseNumberInput(createUnitForm.elderlyPopulation),
+            totalPopulation: parseNumberInput(createUnitForm.totalPopulation),
+            villages: parseNumberInput(createUnitForm.villages),
+            households: parseNumberInput(createUnitForm.households),
+            healthVolunteers: parseNumberInput(createUnitForm.healthVolunteers),
           }),
         });
 
@@ -1033,24 +1049,39 @@ export function SettingsDashboard() {
       }
 
       if (currentPeriod?.id) {
-        const demographicsResponse = await fetch(`/api/health-units/${editingUnit.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fiscalPeriodId: currentPeriod.id,
-            male: Number(editUnitForm.male || "0"),
-            female: Number(editUnitForm.female || "0"),
-            elderlyPopulation: Number(editUnitForm.elderlyPopulation || "0"),
-            totalPopulation: Number(editUnitForm.totalPopulation || "0"),
-            villages: Number(editUnitForm.villages || "0"),
-            households: Number(editUnitForm.households || "0"),
-            healthVolunteers: Number(editUnitForm.healthVolunteers || "0"),
-          }),
-        });
+        const currentPeriodHistory = unitDemographicHistory.find((item) => item.fiscalPeriodId === currentPeriod.id);
 
-        const demographicsBody = (await demographicsResponse.json()) as { error?: string };
-        if (!demographicsResponse.ok) {
-          throw new Error(demographicsBody.error || "ไม่สามารถบันทึกข้อมูลประชากรเริ่มต้นได้");
+        if (isZeroDemographicForm(editUnitForm)) {
+          if (currentPeriodHistory) {
+            const deleteResponse = await fetch(`/api/health-units/${editingUnit.id}?demographicsId=${currentPeriodHistory.id}`, {
+              method: "DELETE",
+            });
+
+            const deleteBody = (await deleteResponse.json()) as { error?: string };
+            if (!deleteResponse.ok) {
+              throw new Error(deleteBody.error || "ไม่สามารถลบข้อมูลประชากรงวดปัจจุบันได้");
+            }
+          }
+        } else {
+          const demographicsResponse = await fetch(`/api/health-units/${editingUnit.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fiscalPeriodId: currentPeriod.id,
+              male: parseNumberInput(editUnitForm.male),
+              female: parseNumberInput(editUnitForm.female),
+              elderlyPopulation: parseNumberInput(editUnitForm.elderlyPopulation),
+              totalPopulation: parseNumberInput(editUnitForm.totalPopulation),
+              villages: parseNumberInput(editUnitForm.villages),
+              households: parseNumberInput(editUnitForm.households),
+              healthVolunteers: parseNumberInput(editUnitForm.healthVolunteers),
+            }),
+          });
+
+          const demographicsBody = (await demographicsResponse.json()) as { error?: string };
+          if (!demographicsResponse.ok) {
+            throw new Error(demographicsBody.error || "ไม่สามารถบันทึกข้อมูลประชากรเริ่มต้นได้");
+          }
         }
       }
 
