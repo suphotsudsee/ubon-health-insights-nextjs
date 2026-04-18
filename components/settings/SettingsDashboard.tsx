@@ -1589,8 +1589,8 @@ export function SettingsDashboard() {
       <Dialog open={Boolean(editingUser)} onOpenChange={(open) => (!open ? setEditingUser(null) : null)}>
         <DialogContent className={dialogContentClassName}>
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเน</DialogTitle>
-            <DialogDescription>เธญเธฑเธเน€เธ”เธ•เธเธทเนเธญ เธชเธดเธ—เธเธดเน เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
+            <DialogTitle>แก้ไขข้อมูลผู้ใช้</DialogTitle>
+            <DialogDescription>อัปเดตข้อมูลผู้ใช้หน่วยบริการ สิทธิ์การใช้งาน และสถานะการเข้าถึง</DialogDescription>
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdateUser}>
             <div className={dialogBodyClassName}>
@@ -1623,7 +1623,7 @@ export function SettingsDashboard() {
             </div>
             <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                เธขเธเน€เธฅเธดเธ
+                <Button type="submit">บันทึก</Button>
               </Button>
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
