@@ -2119,10 +2119,10 @@ export function SettingsDashboard() {
             </div>
             <DialogFooter className={dialogFooterClassName}>
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                <Button type="submit">บันทึก</Button>
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกข้อมูลผู้ใช้"}
               </Button>
             </DialogFooter>
           </form>
