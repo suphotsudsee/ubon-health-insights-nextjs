@@ -202,6 +202,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     });
   }, [records, search]);
 
+  const unitsWithFinanceRecords = useMemo(() => {
+    return new Set(records.map((record) => record.healthUnitId)).size;
+  }, [records]);
+
   const periodsForSelectedYear = useMemo(() => {
     const year = Number(selectedYear);
     return fiscalPeriods.filter((period) => period.fiscalYear === year && period.id);
@@ -659,8 +663,9 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard label="รายการที่โหลด" value={String(records.length)} />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="บันทึกการเงินที่แสดง" value={String(records.length)} />
+        <SummaryCard label="หน่วยบริการที่มีข้อมูล" value={String(unitsWithFinanceRecords)} />
         <SummaryCard label="รายรับรวม" value={formatAmount(records.reduce((sum, record) => sum + record.income, 0))} />
         <SummaryCard label="รายจ่ายรวม" value={formatAmount(records.reduce((sum, record) => sum + record.expense, 0))} />
       </div>
@@ -802,8 +807,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">เพิ่มข้อมูลการเงิน</CardTitle>
-              <CardDescription>เลือกชื่อรายการรายรับหรือรายจ่าย แล้วระบบจะรวมยอดรายเดือนให้อัตโนมัติ</CardDescription>
+              <CardTitle className="text-xl">เพิ่มบันทึกการเงินรายหน่วยบริการ</CardTitle>
+              <CardDescription>บันทึกรายรับและรายจ่ายของแต่ละหน่วยบริการตามงวดเดือน แบบเดียวกับการเพิ่ม KPI รายหน่วยบริการ</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleCreate}>
@@ -890,7 +895,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 </Field>
                 <Button type="submit" className="w-full" disabled={isSaving || !form.healthUnitId || !form.fiscalPeriodId}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {isSaving ? "กำลังบันทึก..." : "เพิ่มรายการการเงิน"}
+                  {isSaving ? "กำลังบันทึก..." : "บันทึกการเงินรายหน่วยบริการ"}
                 </Button>
               </form>
             </CardContent>
@@ -900,8 +905,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         <Card>
           <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle className="text-xl">รายการการเงิน</CardTitle>
-              <CardDescription>ค้นหา แก้ไข และลบข้อมูลรายรับรายจ่ายในระบบ</CardDescription>
+              <CardTitle className="text-xl">จัดการการเงินรายหน่วยบริการ</CardTitle>
+              <CardDescription>ค้นหา แก้ไข และลบบันทึกรายรับรายจ่ายของแต่ละหน่วยบริการ</CardDescription>
             </div>
             <div className="flex gap-2">
               <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหารหัส ชื่อหน่วยบริการ หรือเดือน" className="w-full md:w-72" />
