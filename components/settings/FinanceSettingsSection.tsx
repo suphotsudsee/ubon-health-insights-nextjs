@@ -207,6 +207,34 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     return fiscalPeriods.filter((period) => period.fiscalYear === year && period.id);
   }, [fiscalPeriods, selectedYear]);
 
+  useEffect(() => {
+    if (!selectedYear && (currentPeriod?.fiscalYear || years[0])) {
+      setSelectedYear(String(currentPeriod?.fiscalYear ?? years[0]));
+    }
+  }, [currentPeriod?.fiscalYear, selectedYear, years]);
+
+  useEffect(() => {
+    if (periodsForSelectedYear.length === 0) {
+      setForm((current) => ({ ...current, fiscalPeriodId: "" }));
+      return;
+    }
+
+    setForm((current) => {
+      const stillSelected = periodsForSelectedYear.some((period) => String(period.id) === current.fiscalPeriodId);
+      if (stillSelected) {
+        return current;
+      }
+
+      const defaultPeriod =
+        periodsForSelectedYear.find((period) => period.id === currentPeriod?.id) ?? periodsForSelectedYear[0];
+
+      return {
+        ...current,
+        fiscalPeriodId: defaultPeriod?.id ? String(defaultPeriod.id) : "",
+      };
+    });
+  }, [currentPeriod?.id, periodsForSelectedYear]);
+
   const incomeOptions = useMemo(() => {
     return Array.from(
       new Set(
@@ -779,6 +807,20 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleCreate}>
+                <Field label="ปีงบประมาณ">
+                  <select
+                    value={selectedYear}
+                    onChange={(event) => setSelectedYear(event.target.value)}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">เลือกปีงบประมาณ</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
                 <Field label="หน่วยบริการ">
                   <select
                     value={form.healthUnitId}
@@ -806,6 +848,9 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                       </option>
                     ))}
                   </select>
+                  {!periodsForSelectedYear.length ? (
+                    <p className="text-xs text-muted-foreground">ยังไม่มีงวดเดือนในปีงบประมาณที่เลือก</p>
+                  ) : null}
                 </Field>
 
                 <BreakdownEditor
