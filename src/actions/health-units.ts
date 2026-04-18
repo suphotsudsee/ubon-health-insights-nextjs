@@ -499,6 +499,37 @@ export async function getDemographics(
   }
 }
 
+export async function deleteDemographicRecord(
+  healthUnitId: number,
+  demographicId: number
+): Promise<ApiResponse> {
+  try {
+    const existing = await prisma.healthUnitDemographic.findFirst({
+      where: {
+        id: demographicId,
+        healthUnitId,
+      },
+    })
+
+    if (!existing) {
+      return { success: false, error: 'Demographic record not found' }
+    }
+
+    await prisma.healthUnitDemographic.delete({
+      where: { id: demographicId },
+    })
+
+    revalidatePath('/basic-info')
+    revalidateTag('demographics', 'max')
+    revalidateTag('health-units', 'max')
+
+    return { success: true, message: 'Demographic record deleted successfully' }
+  } catch (error) {
+    console.error('Error deleting demographic record:', error)
+    return { success: false, error: 'Failed to delete demographic record' }
+  }
+}
+
 /**
  * Create or update demographics
  */

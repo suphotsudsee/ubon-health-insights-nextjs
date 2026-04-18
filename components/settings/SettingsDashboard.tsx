@@ -93,6 +93,26 @@ type HealthUnitDetailItem = HealthUnitItem & {
   } | null;
 };
 
+type DemographicHistoryItem = {
+  id: number;
+  healthUnitId: number;
+  fiscalPeriodId: number;
+  male: number | null;
+  female: number | null;
+  totalPopulation: number | null;
+  elderlyPopulation: number | null;
+  villages: number | null;
+  households: number | null;
+  healthVolunteers: number | null;
+  recordedAt: string;
+  fiscalPeriod: {
+    fiscalYear: number;
+    quarter: number;
+    month: number;
+    monthNameTh: string;
+  };
+};
+
 type FiscalPeriodItem = {
   id?: number;
   fiscalYear: number;
@@ -484,6 +504,7 @@ export function SettingsDashboard() {
   const [createUnitForm, setCreateUnitForm] = useState<UnitFormState>(emptyUnitForm);
   const [editingUnit, setEditingUnit] = useState<HealthUnitItem | null>(null);
   const [editUnitForm, setEditUnitForm] = useState<UnitFormState>(emptyUnitForm);
+  const [unitDemographicHistory, setUnitDemographicHistory] = useState<DemographicHistoryItem[]>([]);
 
   async function fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, { cache: "no-store" });
@@ -855,13 +876,23 @@ export function SettingsDashboard() {
 
     setEditingUnit(unit);
     setEditUnitForm(baseForm);
+    setUnitDemographicHistory([]);
 
     if (!currentPeriod?.id) {
+      try {
+        const history = await fetchJson<DemographicHistoryItem[]>(`/api/health-units/${unit.id}?demographicsHistory=true`);
+        setUnitDemographicHistory(history);
+      } catch {
+        setUnitDemographicHistory([]);
+      }
       return;
     }
 
     try {
-      const detail = await fetchJson<HealthUnitDetailItem>(`/api/health-units/${unit.id}?demographics=true&fiscalPeriodId=${currentPeriod.id}`);
+      const [detail, history] = await Promise.all([
+        fetchJson<HealthUnitDetailItem>(`/api/health-units/${unit.id}?demographics=true&fiscalPeriodId=${currentPeriod.id}`),
+        fetchJson<DemographicHistoryItem[]>(`/api/health-units/${unit.id}?demographicsHistory=true`),
+      ]);
       setEditUnitForm({
         ...baseForm,
         male: String(detail.demographics?.male ?? 0),
@@ -872,8 +903,10 @@ export function SettingsDashboard() {
         households: String(detail.demographics?.households ?? 0),
         healthVolunteers: String(detail.demographics?.healthVolunteers ?? 0),
       });
+      setUnitDemographicHistory(history);
     } catch {
       setEditUnitForm(baseForm);
+      setUnitDemographicHistory([]);
     }
   }
 
@@ -1055,6 +1088,41 @@ export function SettingsDashboard() {
       await loadData();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหน่วยบริการได้");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteDemographicHistory(item: DemographicHistoryItem) {
+    if (!editingUnit) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `ยืนยันการลบข้อมูลประชากร ปี ${item.fiscalPeriod.fiscalYear} ไตรมาส ${item.fiscalPeriod.quarter} เดือน ${item.fiscalPeriod.month} ?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    resetFeedback();
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/health-units/${editingUnit.id}?demographicsId=${item.id}`, {
+        method: "DELETE",
+      });
+      const body = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถลบข้อมูลประชากรได้");
+      }
+
+      setMessage(body.message || "ลบข้อมูลประชากรเรียบร้อยแล้ว");
+      await openEditUnitDialog(editingUnit);
+      await loadData();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบข้อมูลประชากรได้");
     } finally {
       setIsSaving(false);
     }
@@ -2211,6 +2279,40 @@ export function SettingsDashboard() {
                   <FormInput label="โรงเรียนมัธยม" value={editUnitForm.secondarySchoolCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, secondarySchoolCount: value }))} />
                   <FormInput label="ศูนย์พัฒนาเด็กเล็ก" value={editUnitForm.childDevelopmentCenterCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, childDevelopmentCenterCount: value }))} />
                   <FormInput label="สถานีสุขภาพ" value={editUnitForm.healthStationCount} onChange={(value) => setEditUnitForm((current) => ({ ...current, healthStationCount: value }))} />
+                </div>
+              </div>
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <div className="mb-3">
+                  <p className="text-sm font-medium">ประวัติข้อมูลประชากร</p>
+                  <p className="text-xs text-muted-foreground">แสดงข้อมูลรายงวดทั้งหมดของหน่วยบริการนี้ และสามารถลบทีละรายการได้</p>
+                </div>
+                <div className="space-y-3">
+                  {unitDemographicHistory.map((item) => (
+                    <div key={item.id} className="rounded-xl border bg-background px-4 py-3">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            ปี {item.fiscalPeriod.fiscalYear} ไตรมาส {item.fiscalPeriod.quarter} เดือน {item.fiscalPeriod.month} {item.fiscalPeriod.monthNameTh}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            ประชากร {formatNumber(item.totalPopulation ?? 0)} คน, ชาย {formatNumber(item.male ?? 0)}, หญิง {formatNumber(item.female ?? 0)}, หลังคาเรือน {formatNumber(item.households ?? 0)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            หมู่บ้าน {formatNumber(item.villages ?? 0)}, อสม. {formatNumber(item.healthVolunteers ?? 0)}, ผู้สูงอายุ {formatNumber(item.elderlyPopulation ?? 0)}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => void handleDeleteDemographicHistory(item)} disabled={isSaving}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          ลบรายการนี้
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {!unitDemographicHistory.length ? (
+                    <div className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                      ยังไม่มีประวัติข้อมูลประชากรของหน่วยบริการนี้
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

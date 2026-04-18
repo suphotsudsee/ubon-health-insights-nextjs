@@ -5,7 +5,8 @@ import {
   updateHealthUnit, 
   deleteHealthUnit,
   upsertDemographics,
-  getDemographics
+  getDemographics,
+  deleteDemographicRecord
 } from '@/actions/health-units'
 
 type RouteParams = { params: Promise<{ id: string }> }
@@ -166,12 +167,35 @@ export async function DELETE(
 ) {
   const { id } = await params
   const unitId = parseInt(id)
+  const searchParams = request.nextUrl.searchParams
 
   if (isNaN(unitId)) {
     return NextResponse.json(
       { error: 'Invalid health unit ID' },
       { status: 400 }
     )
+  }
+
+  const demographicsId = searchParams.get('demographicsId')
+  if (demographicsId) {
+    const demographicId = parseInt(demographicsId)
+    if (isNaN(demographicId)) {
+      return NextResponse.json(
+        { error: 'Invalid demographic record ID' },
+        { status: 400 }
+      )
+    }
+
+    const result = await deleteDemographicRecord(unitId, demographicId)
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(result)
   }
 
   const result = await deleteHealthUnit(unitId)
