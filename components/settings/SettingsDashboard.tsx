@@ -383,7 +383,7 @@ export function SettingsDashboard() {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(body?.error || "เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธชเธณเน€เธฃเนเธ");
+      throw new Error(body?.error || "โหลดข้อมูลไม่สำเร็จ");
     }
     return response.json() as Promise<T>;
   }
@@ -443,7 +443,7 @@ export function SettingsDashboard() {
       setKpiDefinitions(kpiData.definitions);
       setKpiCategories(kpiCategoriesData);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅ");
+      setError(loadError instanceof Error ? loadError.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล");
     } finally {
       setIsLoading(false);
     }
@@ -535,14 +535,14 @@ export function SettingsDashboard() {
 
       const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเนเธฒเธเธเธนเนเนเธเนเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถสร้างผู้ใช้ได้");
       }
 
-      setMessage(body.message || "เธชเธฃเนเธฒเธเธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "สร้างผู้ใช้เรียบร้อยแล้ว");
       setCreateForm(emptyUserForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเนเธฒเธเธเธนเนเนเธเนเนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้");
     } finally {
       setIsSaving(false);
     }
@@ -585,21 +585,21 @@ export function SettingsDashboard() {
 
       const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเนเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้");
       }
 
-      setMessage(body.message || "เธญเธฑเธเน€เธ”เธ•เธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "อัปเดตผู้ใช้เรียบร้อยแล้ว");
       setEditingUser(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธนเนเนเธเนเนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteUser(user: UserItem) {
-    const confirmed = window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธเธนเนเนเธเน ${user.name} ?`);
+    const confirmed = window.confirm(`ยืนยันการลบผู้ใช้ ${user.name} ?`);
     if (!confirmed) {
       return;
     }
@@ -612,13 +612,13 @@ export function SettingsDashboard() {
       const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
 
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธนเนเนเธเนเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถลบผู้ใช้ได้");
       }
 
-      setMessage(body.message || "เธฅเธเธเธนเนเนเธเนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบผู้ใช้เรียบร้อยแล้ว");
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธนเนเนเธเนเนเธ”เน");
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบผู้ใช้ได้");
     } finally {
       setIsSaving(false);
     }
@@ -724,10 +724,10 @@ export function SettingsDashboard() {
 
       const body = (await response.json()) as { error?: string; message?: string; data?: { id: number } };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่มหน่วยบริการได้");
       }
 
-      setMessage(body.message || "เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มหน่วยบริการเรียบร้อยแล้ว");
       if (currentPeriod?.id && body.data?.id) {
         const demographicsResponse = await fetch(`/api/health-units/${body.data.id}`, {
           method: "PUT",
@@ -746,7 +746,7 @@ export function SettingsDashboard() {
 
         const demographicsBody = (await demographicsResponse.json()) as { error?: string };
         if (!demographicsResponse.ok) {
-          throw new Error(demographicsBody.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธฃเธฐเธเธฒเธเธฃเน€เธฃเธดเนเธกเธ•เนเธเนเธ”เน");
+          throw new Error(demographicsBody.error || "ไม่สามารถบันทึกข้อมูลประชากรเริ่มต้นได้");
         }
       }
 
@@ -754,7 +754,7 @@ export function SettingsDashboard() {
       setCreateSubdistricts([]);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มหน่วยบริการได้");
     } finally {
       setIsSaving(false);
     }
@@ -804,7 +804,7 @@ export function SettingsDashboard() {
 
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่มหน่วยบริการได้");
       }
 
       if (currentPeriod?.id) {
@@ -825,22 +825,22 @@ export function SettingsDashboard() {
 
         const demographicsBody = (await demographicsResponse.json()) as { error?: string };
         if (!demographicsResponse.ok) {
-          throw new Error(demographicsBody.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธฃเธฐเธเธฒเธเธฃเนเธ”เน");
+          throw new Error(demographicsBody.error || "ไม่สามารถบันทึกข้อมูลประชากรเริ่มต้นได้");
         }
       }
 
-      setMessage(body.message || "เธญเธฑเธเน€เธ”เธ•เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มหน่วยบริการเรียบร้อยแล้ว");
       setEditingUnit(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มหน่วยบริการได้");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteUnit(unit: HealthUnitItem) {
-    const confirmed = window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ ${unit.name} ?`);
+    const confirmed = window.confirm(`ยืนยันการลบหน่วยบริการ ${unit.name} ?`);
     if (!confirmed) {
       return;
     }
@@ -853,16 +853,16 @@ export function SettingsDashboard() {
       const body = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถลบหน่วยบริการได้");
       }
 
-      setMessage(body.message || "เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบหน่วยบริการเรียบร้อยแล้ว");
       if (editingUnit?.id === unit.id) {
         setEditingUnit(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธ”เน");
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหน่วยบริการได้");
     } finally {
       setIsSaving(false);
     }
@@ -881,20 +881,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถแก้ไขหน่วยบริการได้");
       }
-      setMessage(body.message || "เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "แก้ไขหน่วยบริการเรียบร้อยแล้ว");
       setFiscalYearForm(emptyFiscalYearForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไขหน่วยบริการได้");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteFiscalYear(fiscalYear: number) {
-    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“ ${fiscalYear} ?`)) {
+    if (!window.confirm(`ยืนยันการลบปีงบประมาณ ${fiscalYear} ?`)) {
       return;
     }
 
@@ -905,12 +905,12 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/fiscal-periods?fiscalYear=${fiscalYear}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถบันทึกข้อมูลประชากรได้");
       }
-      setMessage(body.message || "เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "อัปเดตหน่วยบริการเรียบร้อยแล้ว");
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถบันทึกข้อมูลประชากรได้");
     } finally {
       setIsSaving(false);
     }
@@ -943,13 +943,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่มปีงบประมาณได้");
       }
-      setMessage(body.message || "เธเธฑเธเธ—เธถเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มปีงบประมาณเรียบร้อยแล้ว");
       setEditingPeriod(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเธงเธ”เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มปีงบประมาณได้");
     } finally {
       setIsSaving(false);
     }
@@ -978,13 +978,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธก KPI master เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่มปีงบประมาณได้");
       }
-      setMessage(body.message || "เน€เธเธดเนเธก KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มปีงบประมาณเรียบร้อยแล้ว");
       setCreateKpiForm(emptyKpiForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธก KPI master เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มปีงบประมาณได้");
     } finally {
       setIsSaving(false);
     }
@@ -1009,13 +1009,13 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถแก้ไขงวดปีงบประมาณได้");
       }
-      setMessage(body.message || "เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "บันทึกงวดปีงบประมาณเรียบร้อยแล้ว");
       setCreateKpiCategoryForm(emptyKpiCategoryForm);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเนเธกเธซเธกเธงเธ” KPI เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถแก้ไขงวดปีงบประมาณได้");
     } finally {
       setIsSaving(false);
     }
@@ -1056,20 +1056,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธกเธงเธ” KPI เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่มหมวดหมู่ KPI ได้");
       }
-      setMessage(body.message || "เนเธเนเนเธเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มหมวดหมู่ KPI เรียบร้อยแล้ว");
       setEditingKpiCategory(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธซเธกเธงเธ” KPI เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่มหมวดหมู่ KPI ได้");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteKpiCategory(item: KpiCategoryItem) {
-    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธซเธกเธงเธ” KPI ${getKpiCategoryLabel(item)} ?`)) {
+    if (!window.confirm(`ยืนยันการลบหมวดหมู่ KPI ${getKpiCategoryLabel(item)} ?`)) {
       return;
     }
 
@@ -1080,15 +1080,15 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/kpi-categories/${item.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธกเธงเธ” KPI เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถลบหมวดหมู่ KPI ได้");
       }
-      setMessage(body.message || "เธฅเธเธซเธกเธงเธ” KPI เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบหมวดหมู่ KPI เรียบร้อยแล้ว");
       if (editingKpiCategory?.id === item.id) {
         setEditingKpiCategory(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธซเธกเธงเธ” KPI เนเธ”เน");
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหมวดหมู่ KPI ได้");
     } finally {
       setIsSaving(false);
     }
@@ -1137,20 +1137,20 @@ export function SettingsDashboard() {
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธ KPI master เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถเพิ่ม KPI master ได้");
       }
-      setMessage(body.message || "เนเธเนเนเธ KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่ม KPI master เรียบร้อยแล้ว");
       setEditingKpi(null);
       await loadData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธ KPI master เนเธ”เน");
+      setError(saveError instanceof Error ? saveError.message : "ไม่สามารถเพิ่ม KPI master ได้");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteKpiDefinition(item: KpiDefinitionAdminItem) {
-    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธ KPI ${item.code} ?`)) {
+    if (!window.confirm(`ยืนยันการลบ KPI ${item.code} ?`)) {
       return;
     }
 
@@ -1161,15 +1161,15 @@ export function SettingsDashboard() {
       const response = await fetch(`/api/kpi-definitions/${item.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธ KPI master เนเธ”เน");
+        throw new Error(body.error || "ไม่สามารถลบ KPI master ได้");
       }
-      setMessage(body.message || "เธฅเธ KPI master เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบ KPI master เรียบร้อยแล้ว");
       if (editingKpi?.id === item.id) {
         setEditingKpi(null);
       }
       await loadData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธ KPI master เนเธ”เน");
+      setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบ KPI master ได้");
     } finally {
       setIsSaving(false);
     }
@@ -1594,30 +1594,30 @@ export function SettingsDashboard() {
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdateUser}>
             <div className={dialogBodyClassName}>
-              <FormInput label="เธเธทเนเธญ - เธเธฒเธกเธชเธเธธเธฅ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
-              <FormInput label="เธญเธตเน€เธกเธฅ" value={editForm.email} onChange={() => undefined} disabled />
+              <FormInput label="จำนวนประชากร - สำมะลอ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
+              <FormInput label="อีเมล" value={editForm.email} onChange={() => undefined} disabled />
               <FormSelect
-                label="เธชเธดเธ—เธเธดเนเธเธฒเธฃเนเธเนเธเธฒเธ"
+                label="สิทธิ์การใช้งาน"
                 value={editForm.role}
                 onChange={(value) => setEditForm((current) => ({ ...current, role: value as UserItem["role"] }))}
                 options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
               />
               <FormSelect
-                label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ"
+                label="หน่วยบริการ"
                 value={editForm.healthUnitId}
                 onChange={(value) => setEditForm((current) => ({ ...current, healthUnitId: value }))}
                 options={[
-                  { value: "", label: "เนเธกเนเธเธนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ" },
+                  { value: "", label: "ไม่มีผู้ใช้หน่วยบริการ" },
                   ...units.map((unit) => ({ value: String(unit.id), label: `${unit.code} - ${unit.name}` })),
                 ]}
               />
               <FormSelect
-                label="เธชเธ–เธฒเธเธฐ"
+                label="สถานะ"
                 value={editForm.isActive ? "active" : "inactive"}
                 onChange={(value) => setEditForm((current) => ({ ...current, isActive: value === "active" }))}
                 options={[
-                  { value: "active", label: "เนเธเนเธเธฒเธ" },
-                  { value: "inactive", label: "เธเธดเธ”เนเธเนเธเธฒเธ" },
+                  { value: "active", label: "ผู้ใช้งาน" },
+                  { value: "inactive", label: "ผู้ใช้งาน" },
                 ]}
               />
             </div>
@@ -1626,7 +1626,7 @@ export function SettingsDashboard() {
                 เธขเธเน€เธฅเธดเธ
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธฒเธฃเน€เธเธฅเธตเนเธขเธเนเธเธฅเธ"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
               </Button>
             </DialogFooter>
           </form>
