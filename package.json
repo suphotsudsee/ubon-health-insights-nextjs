@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx -r dotenv/config prisma/seed.ts && tsx -r dotenv/config scripts/seed-demo-data.ts",
+    "db:seed:production": "node scripts/bootstrap-production.js --seed-only",
     "db:import:finance": "tsx -r dotenv/config scripts/import-finance-xlsx.ts",
     "db:import:transfer": "tsx -r dotenv/config scripts/import-transfer-csv.ts",
     "db:studio": "prisma studio",

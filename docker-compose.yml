@@ -54,6 +54,7 @@ services:
       
       # Application environment
       - NODE_ENV=production
+      - BOOTSTRAP_SEED=${BOOTSTRAP_SEED:-false}
       
       # Optional: OAuth providers
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}

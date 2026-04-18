@@ -3,6 +3,10 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
+function isEnabled(value) {
+  return ["1", "true", "yes", "on"].includes(String(value || "").trim().toLowerCase());
+}
+
 function expandEnvTemplate(value) {
   if (!value) {
     return value;
@@ -88,6 +92,7 @@ function normalizeNextAuthSecret() {
 function normalizeRuntimeEnvironment() {
   process.env.PORT = process.env.PORT || process.env.APP_PORT || "3010";
   process.env.AUTH_TRUST_HOST = process.env.AUTH_TRUST_HOST || "true";
+  process.env.BOOTSTRAP_SEED = process.env.BOOTSTRAP_SEED || "false";
 
   normalizeDatabaseUrl();
   normalizeNextAuthUrl();
@@ -98,6 +103,7 @@ function normalizeRuntimeEnvironment() {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? "[set]" : "[missing]",
     PORT: process.env.PORT,
+    BOOTSTRAP_SEED: process.env.BOOTSTRAP_SEED,
   });
 }
 
@@ -587,12 +593,39 @@ async function bootstrap() {
   console.log("Running prisma db push...");
   await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
 
+  if (!isEnabled(process.env.BOOTSTRAP_SEED)) {
+    console.log("BOOTSTRAP_SEED is disabled, skipping production seed import.");
+    return;
+  }
+
   console.log("Importing production seed data...");
   await importTransferSeed();
   await importKpiSeed();
 }
 
+async function seedOnly() {
+  try {
+    await ensureUtf8mb4Encoding();
+    console.log("Running prisma db push before manual seed...");
+    await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
+
+    console.log("Running manual production seed import...");
+    await importTransferSeed();
+    await importKpiSeed();
+  } catch (error) {
+    console.error("Manual seed failed:", error);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 async function main() {
+  if (process.argv.includes("--seed-only")) {
+    await seedOnly();
+    return;
+  }
+
   try {
     await bootstrap();
   } catch (error) {
