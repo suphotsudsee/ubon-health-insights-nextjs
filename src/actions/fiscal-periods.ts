@@ -86,15 +86,14 @@ export async function getCurrentFiscalPeriod(): Promise<ApiResponse> {
     const month = now.getMonth() + 1 // JavaScript months are 0-indexed
     
     // Thai fiscal year starts in October
-    // If current month is Oct-Dec, fiscal year is current Buddhist year
-    // If current month is Jan-Sep, fiscal year is previous Buddhist year
+    // Oct-Dec belong to next fiscal year, Jan-Sep belong to current Buddhist year
     let fiscalYear: number
     const buddhistYear = now.getFullYear() + 543 // Convert to Buddhist year
     
     if (month >= 10) {
-      fiscalYear = buddhistYear
+      fiscalYear = buddhistYear + 1
     } else {
-      fiscalYear = buddhistYear - 1
+      fiscalYear = buddhistYear
     }
 
     // Find the period for current month
