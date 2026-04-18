@@ -349,6 +349,13 @@ const roleLabels: Record<UserItem["role"], string> = {
   viewer: "ผู้ดูข้อมูล",
 };
 
+const roleDescriptions: Record<UserItem["role"], string> = {
+  admin: "ดูและจัดการข้อมูลได้ทุกหน่วยบริการ รวมถึงผู้ใช้ ข้อมูลระบบ KPI การเงิน และการตั้งค่าหลัก",
+  manager: "เข้าถึงข้อมูลหน่วยบริการในอำเภอเดียวกับหน่วยบริการที่ผูกกับบัญชี เหมาะสำหรับผู้ดูแลระดับอำเภอ",
+  staff: "บันทึกและติดตามข้อมูลของหน่วยบริการที่ตนเองสังกัด เห็นข้อมูลได้เฉพาะหน่วยของตน",
+  viewer: "ดูข้อมูลของหน่วยบริการที่ตนเองสังกัดได้อย่างเดียว ไม่เหมาะกับงานแก้ไขหรือบันทึกข้อมูล",
+};
+
 function formatNumber(value?: number) {
   return new Intl.NumberFormat("th-TH").format(value || 0);
 }
@@ -404,6 +411,27 @@ function getReviewStatusLabel(status: KpiResultItem["reviewStatus"]) {
     default:
       return "ฉบับร่าง";
   }
+}
+
+function RoleDescriptionList({ selectedRole }: { selectedRole?: UserItem["role"] }) {
+  return (
+    <div className="rounded-xl border bg-muted/20 p-4">
+      <p className="text-sm font-medium">คำอธิบายสิทธิ์การใช้งาน</p>
+      <div className="mt-3 space-y-3 text-sm">
+        {(Object.keys(roleLabels) as UserItem["role"][]).map((role) => (
+          <div
+            key={role}
+            className={`rounded-lg border px-3 py-2 ${
+              selectedRole === role ? "border-primary bg-primary/5" : "border-border bg-background/70"
+            }`}
+          >
+            <p className="font-medium text-foreground">{roleLabels[role]}</p>
+            <p className="text-muted-foreground">{roleDescriptions[role]}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function SettingsDashboard() {
@@ -1526,6 +1554,7 @@ export function SettingsDashboard() {
                     onChange={(value) => setCreateForm((current) => ({ ...current, role: value as UserItem["role"] }))}
                     options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
                   />
+                  <RoleDescriptionList selectedRole={createForm.role} />
                   <FormSelect
                     label="หน่วยบริการ"
                     value={createForm.healthUnitId}
@@ -2060,7 +2089,7 @@ export function SettingsDashboard() {
           </DialogHeader>
           <form className={dialogFormClassName} onSubmit={handleUpdateUser}>
             <div className={dialogBodyClassName}>
-              <FormInput label="จำนวนประชากร - สำมะลอ" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
+              <FormInput label="ชื่อ - นามสกุล" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
               <FormInput label="อีเมล" value={editForm.email} onChange={() => undefined} disabled />
               <FormSelect
                 label="สิทธิ์การใช้งาน"
@@ -2068,6 +2097,7 @@ export function SettingsDashboard() {
                 onChange={(value) => setEditForm((current) => ({ ...current, role: value as UserItem["role"] }))}
                 options={Object.entries(roleLabels).map(([value, label]) => ({ value, label }))}
               />
+              <RoleDescriptionList selectedRole={editForm.role} />
               <FormSelect
                 label="หน่วยบริการ"
                 value={editForm.healthUnitId}
@@ -2082,8 +2112,8 @@ export function SettingsDashboard() {
                 value={editForm.isActive ? "active" : "inactive"}
                 onChange={(value) => setEditForm((current) => ({ ...current, isActive: value === "active" }))}
                 options={[
-                  { value: "active", label: "ผู้ใช้งาน" },
-                  { value: "inactive", label: "ผู้ใช้งาน" },
+                  { value: "active", label: "ใช้งาน" },
+                  { value: "inactive", label: "ปิดใช้งาน" },
                 ]}
               />
             </div>
