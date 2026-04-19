@@ -240,6 +240,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [creatingFiscalYear, setCreatingFiscalYear] = useState(false);
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreviewResponse | null>(null);
 
@@ -672,6 +673,36 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     }
   }
 
+  async function handleCreateSelectedFiscalYear() {
+    if (!selectedYear) {
+      setError("Please select fiscal year first");
+      return;
+    }
+
+    resetFeedback();
+    setCreatingFiscalYear(true);
+
+    try {
+      const response = await fetch("/api/fiscal-periods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fiscalYear: Number(selectedYear) }),
+      });
+      const body = (await response.json()) as { message?: string; error?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error || "Unable to create fiscal year");
+      }
+
+      setMessage(body.message || `Fiscal year ${selectedYear} is ready`);
+      window.location.reload();
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : "Unable to create fiscal year");
+    } finally {
+      setCreatingFiscalYear(false);
+    }
+  }
+
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     resetFeedback();
@@ -955,6 +986,15 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                   <p className="text-muted-foreground">ตัวอย่าง: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
                 </div>
               ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => void handleCreateSelectedFiscalYear()}
+                disabled={creatingFiscalYear || !selectedYear}
+              >
+                {creatingFiscalYear ? `Preparing fiscal year ${selectedYear}...` : `Create or repair fiscal year ${selectedYear || ""}`}
+              </Button>
               <Button
                 type="button"
                 variant="outline"

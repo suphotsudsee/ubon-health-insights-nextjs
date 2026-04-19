@@ -128,19 +128,20 @@ export async function getFiscalYearsWithUsage(): Promise<ApiResponse> {
 export async function createFiscalYear(data: unknown): Promise<ApiResponse> {
   try {
     const validated = createFiscalYearSchema.parse(data)
-
-    const existing = await prisma.fiscalPeriod.count({
+    const months = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    const existingPeriods = await prisma.fiscalPeriod.findMany({
       where: { fiscalYear: validated.fiscalYear },
+      select: { month: true },
     })
+    const existingMonths = new Set(existingPeriods.map((period) => period.month))
+    const missingMonths = months.filter((month) => !existingMonths.has(month))
 
-    if (existing > 0) {
-      return { success: false, error: 'Fiscal year already exists' }
+    if (missingMonths.length === 0) {
+      return { success: true, message: 'Fiscal year already complete' }
     }
 
-    const months = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
     await prisma.$transaction(
-      months.map((month) => {
+      missingMonths.map((month) => {
         const year = getGregorianYearForFiscalMonth(validated.fiscalYear, month)
         const lastDay = getLastDayOfMonth(year, month)
 
@@ -160,7 +161,10 @@ export async function createFiscalYear(data: unknown): Promise<ApiResponse> {
     revalidatePath('/settings')
     revalidateTag('fiscal-periods', 'max')
 
-    return { success: true, message: 'Fiscal year created successfully' }
+    return {
+      success: true,
+      message: existingPeriods.length > 0 ? 'Missing fiscal periods created successfully' : 'Fiscal year created successfully',
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Validation error' }
