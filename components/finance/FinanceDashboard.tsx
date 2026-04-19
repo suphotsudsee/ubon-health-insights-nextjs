@@ -56,24 +56,10 @@ function getBreakdownEntries(record: FinanceBreakdownRecord, type: "income" | "e
   return Object.entries((breakdown || {}) as Record<string, number>).sort((a, b) => b[1] - a[1]);
 }
 
-function aggregateBreakdownByType(records: FinanceBreakdownRecord[], type: "income" | "expense") {
-  const totals = new Map<string, number>();
-
-  for (const record of records) {
-    const breakdown = (type === "income" ? record.incomeBreakdown : record.expenseBreakdown) || {};
-    for (const [name, value] of Object.entries(breakdown as Record<string, number>)) {
-      totals.set(name, (totals.get(name) || 0) + Number(value || 0));
-    }
-  }
-
-  return Array.from(totals.entries())
-    .map(([name, amount]) => ({
-      name,
-      shortName: name.length > 32 ? `${name.slice(0, 32)}...` : name,
-      amount,
-    }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 8);
+function formatCategoryLabel(name: string, limit = 32) {
+  const withoutCode = name.replace(/^\d+(?:\.\d+)+\s*/u, "").replace(/\s+/gu, " ").trim();
+  const readable = withoutCode || name.trim();
+  return readable.length > limit ? `${readable.slice(0, limit)}...` : readable;
 }
 
 function aggregateBreakdownByTypeWithLimit(
@@ -93,7 +79,8 @@ function aggregateBreakdownByTypeWithLimit(
   return Array.from(totals.entries())
     .map(([name, amount]) => ({
       name,
-      shortName: name.length > 32 ? `${name.slice(0, 32)}...` : name,
+      displayName: formatCategoryLabel(name, 80),
+      shortName: formatCategoryLabel(name, 32),
       amount,
     }))
     .sort((a, b) => b.amount - a.amount)
@@ -104,16 +91,16 @@ function buildMonthlyStackedData(
   records: FinanceBreakdownRecord[],
   months: string[],
   type: "income" | "expense",
-  categoryNames: string[]
+  categoryNames: Array<{ key: string; label: string }>
 ) {
   return months.map((month) => {
     const row: Record<string, string | number> = { month };
     const monthRecords = records.filter((record) => record.month === month);
 
-    for (const name of categoryNames) {
-      row[name] = monthRecords.reduce((sum, record) => {
+    for (const { key } of categoryNames) {
+      row[key] = monthRecords.reduce((sum, record) => {
         const breakdown = (type === "income" ? record.incomeBreakdown : record.expenseBreakdown) || {};
-        return sum + Number((breakdown as Record<string, number>)[name] || 0);
+        return sum + Number((breakdown as Record<string, number>)[key] || 0);
       }, 0);
     }
 
@@ -160,8 +147,8 @@ export function FinanceDashboard() {
 
   const incomeCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "income", topLimit);
   const expenseCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "expense", topLimit);
-  const incomeStackedCategories = incomeCategoryData.slice(0, 4).map((item) => item.name);
-  const expenseStackedCategories = expenseCategoryData.slice(0, 4).map((item) => item.name);
+  const incomeStackedCategories = incomeCategoryData.slice(0, 4).map((item) => ({ key: item.name, label: item.shortName }));
+  const expenseStackedCategories = expenseCategoryData.slice(0, 4).map((item) => ({ key: item.name, label: item.shortName }));
   const incomeStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "income", incomeStackedCategories);
   const expenseStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "expense", expenseStackedCategories);
   const incomePalette = ["#16a34a", "#22c55e", "#4ade80", "#86efac"];
@@ -271,7 +258,7 @@ export function FinanceDashboard() {
                   <YAxis type="category" dataKey="shortName" width={170} tickLine={false} axisLine={false} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
-                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.name || "")}
+                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.displayName || payload?.[0]?.payload?.name || "")}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
@@ -309,7 +296,7 @@ export function FinanceDashboard() {
                   <YAxis type="category" dataKey="shortName" width={170} tickLine={false} axisLine={false} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
-                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.name || "")}
+                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.displayName || payload?.[0]?.payload?.name || "")}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
@@ -348,8 +335,15 @@ export function FinanceDashboard() {
                     }}
                   />
                   <Legend />
-                  {incomeStackedCategories.map((name, index) => (
-                    <Bar key={name} dataKey={name} stackId="income" fill={colorForIndex(index, incomePalette)} radius={index === incomeStackedCategories.length - 1 ? [6, 6, 0, 0] : 0} />
+                  {incomeStackedCategories.map((item, index) => (
+                    <Bar
+                      key={item.key}
+                      dataKey={item.key}
+                      name={item.label}
+                      stackId="income"
+                      fill={colorForIndex(index, incomePalette)}
+                      radius={index === incomeStackedCategories.length - 1 ? [6, 6, 0, 0] : 0}
+                    />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
@@ -380,8 +374,15 @@ export function FinanceDashboard() {
                     }}
                   />
                   <Legend />
-                  {expenseStackedCategories.map((name, index) => (
-                    <Bar key={name} dataKey={name} stackId="expense" fill={colorForIndex(index, expensePalette)} radius={index === expenseStackedCategories.length - 1 ? [6, 6, 0, 0] : 0} />
+                  {expenseStackedCategories.map((item, index) => (
+                    <Bar
+                      key={item.key}
+                      dataKey={item.key}
+                      name={item.label}
+                      stackId="expense"
+                      fill={colorForIndex(index, expensePalette)}
+                      radius={index === expenseStackedCategories.length - 1 ? [6, 6, 0, 0] : 0}
+                    />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
