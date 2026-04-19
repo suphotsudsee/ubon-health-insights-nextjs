@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { importFinanceWorkbook } from "@/lib/finance-import";
+import { importFinanceFiles } from "@/lib/finance-import";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
-  const file = formData.get("file");
+  const fileEntries = formData.getAll("files");
+  const singleFile = formData.get("file");
   const fiscalYearValue = formData.get("fiscalYear");
   const recorder = String(formData.get("recorder") ?? "").trim() || undefined;
 
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "File is required" }, { status: 400 });
+  const files = [...fileEntries, singleFile].filter((entry): entry is File => entry instanceof File);
+
+  if (files.length === 0) {
+    return NextResponse.json({ error: "At least one file is required" }, { status: 400 });
   }
 
   const fiscalYear = Number(fiscalYearValue);
@@ -17,8 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await importFinanceWorkbook(buffer, {
+    const payload = await Promise.all(
+      files.map(async (file) => ({
+        name: file.name,
+        buffer: Buffer.from(await file.arrayBuffer()),
+      }))
+    );
+
+    const result = await importFinanceFiles(payload, {
       fiscalYear,
       recorder,
     });

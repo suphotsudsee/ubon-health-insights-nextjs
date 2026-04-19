@@ -64,9 +64,11 @@ type FinanceRecordFormState = {
 };
 
 type ImportResponse = {
+  processedFiles: number;
   imported: number;
   updated: number;
   skipped: number;
+  detectedUnits: string[];
   issues: Array<{
     sourceCode: string;
     unitCode: string;
@@ -158,6 +160,7 @@ type Props = {
 
 export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPeriod }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [records, setRecords] = useState<FinanceRecordItem[]>([]);
   const [accounts, setAccounts] = useState<FinanceAccountItem[]>([]);
   const [search, setSearch] = useState("");
@@ -182,7 +185,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [importing, setImporting] = useState(false);
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
 
@@ -306,6 +309,14 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
   useEffect(() => {
     void loadAccounts();
+  }, []);
+
+  useEffect(() => {
+    if (folderInputRef.current) {
+      folderInputRef.current.setAttribute("webkitdirectory", "");
+      folderInputRef.current.setAttribute("directory", "");
+      folderInputRef.current.setAttribute("multiple", "");
+    }
   }, []);
 
   function updateLines(
@@ -474,7 +485,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   }
 
   async function handleImport() {
-    if (!selectedFile) {
+    if (selectedFiles.length === 0) {
       setError("กรุณาเลือกไฟล์ Excel");
       return;
     }
@@ -485,7 +496,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
     try {
       const payload = new FormData();
-      payload.set("file", selectedFile);
+      selectedFiles.forEach((file) => payload.append("files", file));
       payload.set("fiscalYear", selectedYear);
       payload.set("recorder", form.recorder || "settings-import");
 
@@ -501,9 +512,12 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
       setLastImport(body);
       setMessage(`นำเข้าสำเร็จ เพิ่มใหม่ ${body.imported} ปรับปรุง ${body.updated} ข้าม ${body.skipped}`);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
+      }
+      if (folderInputRef.current) {
+        folderInputRef.current.value = "";
       }
       await loadRecords();
       await loadAccounts();
@@ -776,20 +790,40 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept=".xlsx,.xls"
                   className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
                 />
               </Field>
+              <Field label="โฟลเดอร์เอกสารรายเดือน">
+                <input
+                  ref={folderInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
+                />
+              </Field>
+              {selectedFiles.length > 0 ? (
+                <div className="rounded-xl border bg-muted/20 p-4 text-sm">
+                  <p>เลือกแล้ว {selectedFiles.length} ไฟล์</p>
+                  <p className="text-muted-foreground">ตัวอย่าง: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
+                </div>
+              ) : null}
               <Button type="button" className="w-full" onClick={() => void handleImport()} disabled={importing || !selectedYear}>
                 <Upload className="mr-2 h-4 w-4" />
                 {importing ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
               </Button>
               {lastImport ? (
                 <div className="rounded-xl border bg-muted/20 p-4 text-sm">
+                  <p>ประมวลผล {lastImport.processedFiles} ไฟล์</p>
                   <p>เพิ่มใหม่ {lastImport.imported} รายการ</p>
                   <p>ปรับปรุง {lastImport.updated} รายการ</p>
                   <p>ข้าม {lastImport.skipped} รายการ</p>
+                  {lastImport.detectedUnits.length > 0 ? (
+                    <p className="text-muted-foreground">หน่วยบริการที่ตรวจพบ: {lastImport.detectedUnits.join(", ")}</p>
+                  ) : null}
                   {lastImport.issues.length > 0 ? (
                     <div className="mt-3 space-y-2">
                       {lastImport.issues.slice(0, 5).map((issue, index) => (
