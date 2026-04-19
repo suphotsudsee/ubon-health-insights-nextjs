@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FilterBar } from "@/components/dashboard/FilterBar";
 import { useDashboardData } from "@/components/dashboard/useDashboardData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Legend,
   Line,
@@ -53,10 +56,80 @@ function getBreakdownEntries(record: FinanceBreakdownRecord, type: "income" | "e
   return Object.entries((breakdown || {}) as Record<string, number>).sort((a, b) => b[1] - a[1]);
 }
 
+function aggregateBreakdownByType(records: FinanceBreakdownRecord[], type: "income" | "expense") {
+  const totals = new Map<string, number>();
+
+  for (const record of records) {
+    const breakdown = (type === "income" ? record.incomeBreakdown : record.expenseBreakdown) || {};
+    for (const [name, value] of Object.entries(breakdown as Record<string, number>)) {
+      totals.set(name, (totals.get(name) || 0) + Number(value || 0));
+    }
+  }
+
+  return Array.from(totals.entries())
+    .map(([name, amount]) => ({
+      name,
+      shortName: name.length > 32 ? `${name.slice(0, 32)}...` : name,
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8);
+}
+
+function aggregateBreakdownByTypeWithLimit(
+  records: FinanceBreakdownRecord[],
+  type: "income" | "expense",
+  limit: number
+) {
+  const totals = new Map<string, number>();
+
+  for (const record of records) {
+    const breakdown = (type === "income" ? record.incomeBreakdown : record.expenseBreakdown) || {};
+    for (const [name, value] of Object.entries(breakdown as Record<string, number>)) {
+      totals.set(name, (totals.get(name) || 0) + Number(value || 0));
+    }
+  }
+
+  return Array.from(totals.entries())
+    .map(([name, amount]) => ({
+      name,
+      shortName: name.length > 32 ? `${name.slice(0, 32)}...` : name,
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
+}
+
+function buildMonthlyStackedData(
+  records: FinanceBreakdownRecord[],
+  months: string[],
+  type: "income" | "expense",
+  categoryNames: string[]
+) {
+  return months.map((month) => {
+    const row: Record<string, string | number> = { month };
+    const monthRecords = records.filter((record) => record.month === month);
+
+    for (const name of categoryNames) {
+      row[name] = monthRecords.reduce((sum, record) => {
+        const breakdown = (type === "income" ? record.incomeBreakdown : record.expenseBreakdown) || {};
+        return sum + Number((breakdown as Record<string, number>)[name] || 0);
+      }, 0);
+    }
+
+    return row;
+  });
+}
+
+function colorForIndex(index: number, palette: string[]) {
+  return palette[index % palette.length];
+}
+
 export function FinanceDashboard() {
   const { data, loading } = useDashboardData();
   const [fiscalYear, setFiscalYear] = useState("2567");
   const [amphoe, setAmphoe] = useState("all");
+  const [topLimit, setTopLimit] = useState<8 | 15>(8);
   const [modal, setModal] = useState<BreakdownModalState>({ open: false });
   const financeData = (data?.financeData || []) as FinanceBreakdownRecord[];
   const monthList = data?.monthList || [];
@@ -84,6 +157,15 @@ export function FinanceDashboard() {
       balance: monthData.length > 0 ? monthData.reduce((sum, f) => sum + f.balance, 0) / monthData.length : 0,
     };
   });
+
+  const incomeCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "income", topLimit);
+  const expenseCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "expense", topLimit);
+  const incomeStackedCategories = incomeCategoryData.slice(0, 4).map((item) => item.name);
+  const expenseStackedCategories = expenseCategoryData.slice(0, 4).map((item) => item.name);
+  const incomeStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "income", incomeStackedCategories);
+  const expenseStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "expense", expenseStackedCategories);
+  const incomePalette = ["#16a34a", "#22c55e", "#4ade80", "#86efac"];
+  const expensePalette = ["#dc2626", "#ef4444", "#f87171", "#fca5a5"];
 
   if (loading) {
     return <div className="py-10 text-sm text-muted-foreground">กำลังโหลดข้อมูล...</div>;
@@ -166,6 +248,150 @@ export function FinanceDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="card-hover border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-background to-background">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg text-emerald-700">รายการรับสูงสุด</CardTitle>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant={topLimit === 8 ? "default" : "outline"} onClick={() => setTopLimit(8)}>
+                Top 8
+              </Button>
+              <Button type="button" size="sm" variant={topLimit === 15 ? "default" : "outline"} onClick={() => setTopLimit(15)}>
+                Top 15
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={incomeCategoryData} layout="vertical" margin={{ top: 8, right: 20, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="shortName" width={170} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.name || "")}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="hsl(142, 71%, 45%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {incomeCategoryData.length === 0 ? (
+              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลรายการรับตามตัวกรองปัจจุบัน</p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover border border-rose-100 bg-gradient-to-br from-rose-50/70 via-background to-background">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg text-rose-700">รายการจ่ายสูงสุด</CardTitle>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant={topLimit === 8 ? "default" : "outline"} onClick={() => setTopLimit(8)}>
+                Top 8
+              </Button>
+              <Button type="button" size="sm" variant={topLimit === 15 ? "default" : "outline"} onClick={() => setTopLimit(15)}>
+                Top 15
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={expenseCategoryData} layout="vertical" margin={{ top: 8, right: 20, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="shortName" width={170} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.name || "")}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="hsl(0, 72%, 51%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {expenseCategoryData.length === 0 ? (
+              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลรายการจ่ายตามตัวกรองปัจจุบัน</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="card-hover border border-emerald-100">
+          <CardHeader>
+            <CardTitle className="text-lg text-emerald-700">กราฟแท่งซ้อนรายเดือน: รายการรับ</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={incomeStackedData} margin={{ top: 8, right: 20, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  {incomeStackedCategories.map((name, index) => (
+                    <Bar key={name} dataKey={name} stackId="income" fill={colorForIndex(index, incomePalette)} radius={index === incomeStackedCategories.length - 1 ? [6, 6, 0, 0] : 0} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {incomeStackedCategories.length === 0 ? (
+              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟรายการรับรายเดือน</p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover border border-rose-100">
+          <CardHeader>
+            <CardTitle className="text-lg text-rose-700">กราฟแท่งซ้อนรายเดือน: รายการจ่าย</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={expenseStackedData} margin={{ top: 8, right: 20, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  {expenseStackedCategories.map((name, index) => (
+                    <Bar key={name} dataKey={name} stackId="expense" fill={colorForIndex(index, expensePalette)} radius={index === expenseStackedCategories.length - 1 ? [6, 6, 0, 0] : 0} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {expenseStackedCategories.length === 0 ? (
+              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟรายการจ่ายรายเดือน</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="card-hover">
         <CardHeader>
