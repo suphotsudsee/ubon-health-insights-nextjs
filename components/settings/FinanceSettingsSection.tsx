@@ -1367,7 +1367,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       </div>
 
       <Dialog open={Boolean(editingRecord)} onOpenChange={(open) => (!open ? setEditingRecord(null) : null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>แก้ไขข้อมูลการเงิน</DialogTitle>
             <DialogDescription>ปรับรายการรายได้ รายจ่าย ผู้บันทึก และหมายเหตุของรายการที่มีอยู่</DialogDescription>
@@ -1440,7 +1440,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </div>
             ) : null}
 
-            <DialogFooter>
+            <DialogFooter className="border-t bg-background pt-4">
               <Button type="button" variant="outline" onClick={() => setEditingRecord(null)}>
                 ยกเลิก
               </Button>
@@ -1453,7 +1453,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       </Dialog>
 
       <Dialog open={Boolean(editingAccount)} onOpenChange={(open) => (!open ? setEditingAccount(null) : null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>แก้ไข master รายการการเงิน</DialogTitle>
             <DialogDescription>ปรับประเภท ชื่อรายการ ลำดับ และสถานะการใช้งาน</DialogDescription>
@@ -1487,7 +1487,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 </select>
               </Field>
             </div>
-            <DialogFooter>
+            <DialogFooter className="border-t bg-background pt-4">
               <Button type="button" variant="outline" onClick={() => setEditingAccount(null)}>
                 ยกเลิก
               </Button>
@@ -1536,7 +1536,7 @@ function BreakdownEditor({
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="max-h-[40vh] space-y-3 overflow-y-auto pr-1">
         {lines.map((line) => (
           <div key={line.id} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px_92px]">
             <div>
