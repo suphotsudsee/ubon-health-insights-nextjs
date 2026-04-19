@@ -13,7 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession();
-  const callbackUrl = searchParams.get("callbackUrl") || "/settings";
+  const callbackUrl = searchParams?.get("callbackUrl") || "/settings";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
