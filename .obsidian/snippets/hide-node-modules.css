@@ -1,0 +1,6 @@
+/* Hide node_modules from the Obsidian file explorer. */
+.nav-folder[data-path="node_modules"],
+.nav-folder-title[data-path="node_modules"],
+.tree-item[data-path="node_modules"] {
+  display: none !important;
+}

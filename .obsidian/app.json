@@ -1,0 +1,7 @@
+{
+  "showUnsupportedFiles": true,
+  "alwaysUpdateLinks": true,
+  "userIgnoreFilters": [
+    "/node_modules/"
+  ]
+}

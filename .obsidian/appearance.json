@@ -1,0 +1,7 @@
+{
+  "theme": "obsidian",
+  "enabledCssSnippets": [
+    "hide-node-modules"
+  ],
+  "accentColor": ""
+}

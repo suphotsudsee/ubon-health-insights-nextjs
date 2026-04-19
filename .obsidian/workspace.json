@@ -1,0 +1,218 @@
+{
+  "main": {
+    "id": "0c17797af696eb6f",
+    "type": "split",
+    "children": [
+      {
+        "id": "537e2dec97e480d5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3823e744f0080699",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "มุมมองกราฟ"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "5b2e66814f21f133",
+    "type": "split",
+    "children": [
+      {
+        "id": "3606b170be5654e7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8a5eda94728393dd",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "File explorer"
+            }
+          },
+          {
+            "id": "9ff463b34fa4bcd4",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "ค้นหา"
+            }
+          },
+          {
+            "id": "a78a4e76837e0858",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "บุ๊กมาร์ก"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "41ffde22a26b440e",
+    "type": "split",
+    "children": [
+      {
+        "id": "3ce82d9ff1df755b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "742338ffa40da060",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "แบ็คลิงค์"
+            }
+          },
+          {
+            "id": "4fb41d81102aa81b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "ลิงค์ขาออก"
+            }
+          },
+          {
+            "id": "cd4b1562cdfbb037",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "แท็ก"
+            }
+          },
+          {
+            "id": "b8265df4a03a68b8",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "คุณสมบัติทั้งหมด"
+            }
+          },
+          {
+            "id": "c604641621202d99",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "โครงเรื่อง"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:เปิด quick switcher": false,
+      "graph:เปิดมุมมองกราฟ": false,
+      "canvas:สร้างผืนผ้าใบใหม่": false,
+      "daily-notes:เปิดโน้ตของวันนี้": false,
+      "templates:แทรกเทมเพลต": false,
+      "command-palette:เปิดกระดานคำสั่ง": false,
+      "bases:สร้างฐานใหม่": false
+    }
+  },
+  "active": "3823e744f0080699",
+  "lastOpenFiles": [
+    "pages/syntheses/api-surface-map.md",
+    "pages/syntheses/2026-04-19-second-brain-operating-model.md",
+    "pages/projects/ubon-health-insights-code-map.md",
+    "pages/syntheses/settings-admin-domain-map.md",
+    "pages/syntheses/kpi-domain-map.md",
+    "pages/syntheses/finance-domain-map.md",
+    "index.md",
+    "pages/sources/2026-04-19-llm-wiki-pattern.md",
+    "pages/syntheses/persistence-and-import-pipeline.md",
+    "pages/syntheses/auth-and-access-control.md",
+    "pages/syntheses/dashboard-data-flow.md",
+    "pages/syntheses/app-shell-and-navigation.md",
+    "ยังไม่ได้ตั้งชื่อ.canvas",
+    "ยังไม่ได้ตั้งชื่อ 2.base",
+    "ยังไม่ได้ตั้งชื่อ 1.base",
+    "ยังไม่ได้ตั้งชื่อ.base",
+    "docs/task-product-manager.md",
+    "docs/folder-structure.md",
+    "README.md",
+    "node_modules/function-bind/README.md",
+    "node_modules/oauth4webapi/README.md",
+    "node_modules/xlsx/README.md",
+    "node_modules/next/dist/docs/01-app/02-guides/migrating/app-router-migration.md",
+    "pages/topics/second-brain.md",
+    "pages/topics/llm-wiki.md",
+    "raw/sources/2026-04-19-llm-wiki-pattern.md",
+    "meta/folder-conventions.md",
+    "log.md",
+    "CLAUDE.md",
+    "templates",
+    "meta",
+    "pages/topics",
+    "pages/syntheses",
+    "pages/sources",
+    "pages/queries",
+    "pages/projects"
+  ]
+}
