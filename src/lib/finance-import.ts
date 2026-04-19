@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+﻿import * as XLSX from "xlsx";
 import { prisma } from "@/lib/db";
 import { syncFinanceAccountsFromBreakdown } from "@/actions/finance-accounts";
 
@@ -109,6 +109,28 @@ function toNumber(value: unknown) {
 
 function trimCell(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function normalizeAccountCode(value: string) {
+  return value.replace(/[^\d.]/g, "").trim();
+}
+
+function classifyVoucherEntry(
+  accountCode: string,
+  side: "debit" | "credit"
+): { kind: "income" | "expense" | null; multiplier: number } {
+  const normalized = normalizeAccountCode(accountCode);
+  const accountClass = normalized[0];
+
+  if (accountClass === "4") {
+    return { kind: "income", multiplier: side === "credit" ? 1 : -1 };
+  }
+
+  if (accountClass === "5") {
+    return { kind: "expense", multiplier: side === "debit" ? 1 : -1 };
+  }
+
+  return { kind: null, multiplier: 0 };
 }
 
 function normalizeUnitName(value: string) {
@@ -300,7 +322,9 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
   const normalizedUnitName = normalizeUnitName(unitName);
   const month = findDocumentMonth(rows);
   const sourceCode = findDocumentSourceCode(rows, fileName);
+  const incomeBreakdown: Record<string, number> = {};
   const expenseBreakdown: Record<string, number> = {};
+  let income = 0;
   let expense = 0;
 
   for (const row of rows) {
@@ -308,11 +332,14 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
       .map((cell, index) => ({ index, value: trimCell(cell) }))
       .filter((cell) => cell.value);
 
-    if (cells[0]?.value !== "เดบิต") {
+    const sideLabel = cells[0]?.value;
+    const side = sideLabel === "เดบิต" ? "debit" : sideLabel === "เครดิต" ? "credit" : null;
+
+    if (!side) {
       continue;
     }
 
-    const accountName = cells[1]?.value || "Unknown expense";
+    const accountName = cells[1]?.value || "Unknown account";
     const accountCode = cells.find((cell) => /^\d[\d.]+$/.test(cell.value))?.value || "";
     const amount = toNumber(cells[cells.length - 1]?.value);
 
@@ -320,22 +347,34 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
       continue;
     }
 
+    const classification = classifyVoucherEntry(accountCode, side);
+    if (!classification.kind) {
+      continue;
+    }
+
     const breakdownKey = accountCode ? `${accountCode} ${accountName}` : accountName;
-    expense += amount;
-    expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + amount;
+    const signedAmount = amount * classification.multiplier;
+
+    if (classification.kind === "income") {
+      income += signedAmount;
+      incomeBreakdown[breakdownKey] = (incomeBreakdown[breakdownKey] ?? 0) + signedAmount;
+    } else {
+      expense += signedAmount;
+      expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + signedAmount;
+    }
   }
 
   return {
     record:
-      unitName && normalizedUnitName && month && expense > 0
+      unitName && normalizedUnitName && month && (income !== 0 || expense !== 0)
         ? {
             sourceCode,
             unitName,
             normalizedUnitName,
             month,
-            income: 0,
+            income,
             expense,
-            incomeBreakdown: {},
+            incomeBreakdown,
             expenseBreakdown,
             fileNames: [fileName],
           }
@@ -347,8 +386,8 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
       ...(!month
         ? [{ sourceCode, unitCode: "", month: null, reason: `Cannot detect month in file ${fileName}` }]
         : []),
-      ...(expense <= 0
-        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect debit amount in file ${fileName}` }]
+      ...((income === 0 && expense === 0)
+        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect income or expense amount in file ${fileName}` }]
         : []),
     ] satisfies FinanceImportIssue[],
   };
@@ -387,6 +426,7 @@ async function importExpenseDocumentFiles(
   let updated = 0;
 
   for (const record of records) {
+    await syncFinanceAccountsFromBreakdown("income", Object.keys(record.incomeBreakdown || {}));
     await syncFinanceAccountsFromBreakdown("expense", Object.keys(record.expenseBreakdown || {}));
 
     const matchedUnits = unitsByNormalizedName.get(record.normalizedUnitName) ?? [];
@@ -425,11 +465,25 @@ async function importExpenseDocumentFiles(
       select: {
         id: true,
         income: true,
+        expense: true,
+        incomeBreakdown: true,
+        expenseBreakdown: true,
       },
     });
 
     const preservedIncome = Number(existing?.income ?? 0);
-    const noteSuffix = `Imported expense documents (${record.fileNames.length} files): ${record.fileNames.join(", ")}`;
+    const preservedExpense = Number(existing?.expense ?? 0);
+    const nextIncome = Object.keys(record.incomeBreakdown).length > 0 ? record.income : preservedIncome;
+    const nextExpense = Object.keys(record.expenseBreakdown).length > 0 ? record.expense : preservedExpense;
+    const nextIncomeBreakdown =
+      Object.keys(record.incomeBreakdown).length > 0
+        ? record.incomeBreakdown
+        : ((existing?.incomeBreakdown as Record<string, number> | null) ?? {});
+    const nextExpenseBreakdown =
+      Object.keys(record.expenseBreakdown).length > 0
+        ? record.expenseBreakdown
+        : ((existing?.expenseBreakdown as Record<string, number> | null) ?? {});
+    const noteSuffix = `Imported accounting documents (${record.fileNames.length} files): ${record.fileNames.join(", ")}`;
 
     await prisma.financeRecord.upsert({
       where: {
@@ -439,19 +493,21 @@ async function importExpenseDocumentFiles(
         },
       },
       update: {
-        expense: record.expense,
-        expenseBreakdown: record.expenseBreakdown,
-        balance: preservedIncome - record.expense,
+        income: nextIncome,
+        expense: nextExpense,
+        incomeBreakdown: nextIncomeBreakdown,
+        expenseBreakdown: nextExpenseBreakdown,
+        balance: nextIncome - nextExpense,
         recorder: options.recorder,
         notes: noteSuffix,
       },
       create: {
         healthUnitId: unit.id,
         fiscalPeriodId: period.id,
-        income: 0,
+        income: record.income,
         expense: record.expense,
-        balance: -record.expense,
-        incomeBreakdown: {},
+        balance: record.income - record.expense,
+        incomeBreakdown: record.incomeBreakdown,
         expenseBreakdown: record.expenseBreakdown,
         recorder: options.recorder,
         notes: noteSuffix,
@@ -491,13 +547,20 @@ function collectExpenseDocumentRecords(files: FinanceImportFile[]) {
     const current: ParsedFinanceDocumentGroup =
       grouped.get(key) ?? {
         ...parsed.record,
+        income: 0,
         expense: 0,
+        incomeBreakdown: {} as Record<string, number>,
         expenseBreakdown: {} as Record<string, number>,
         fileNames: [],
       };
 
+    current.income += parsed.record.income;
     current.expense += parsed.record.expense;
     current.fileNames.push(file.name);
+
+    for (const [account, amount] of Object.entries(parsed.record.incomeBreakdown)) {
+      current.incomeBreakdown[account] = (current.incomeBreakdown[account] ?? 0) + amount;
+    }
 
     for (const [account, amount] of Object.entries(parsed.record.expenseBreakdown)) {
       current.expenseBreakdown[account] = (current.expenseBreakdown[account] ?? 0) + amount;
@@ -654,7 +717,7 @@ export async function previewFinanceFiles(
       unitName: matchedUnits[0]?.name || record.unitName,
       month: record.month,
       fiscalYear: options.fiscalYear,
-      income: 0,
+      income: record.income,
       expense: record.expense,
       status,
       reason,
@@ -902,3 +965,4 @@ export async function importFinanceFiles(
     issues,
   };
 }
+
