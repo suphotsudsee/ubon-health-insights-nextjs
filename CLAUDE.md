@@ -16,6 +16,7 @@ This vault is a personal LLM-maintained wiki. The human curates sources and asks
 3. `CLAUDE.md`: the schema and workflow contract for every future interaction.
 
 ## Canonical Files
+- [hotcache.md](./hotcache.md): rolling cache of the most recent high-value session context. Read this first.
 - [index.md](./index.md): content-oriented catalog of the wiki.
 - [log.md](./log.md): append-only chronological record.
 - [meta/folder-conventions.md](./meta/folder-conventions.md): storage rules and naming conventions.
@@ -95,11 +96,21 @@ When the user provides a new source:
 
 ### Query
 When the user asks a question:
-1. Read `index.md` first.
-2. Read the most relevant wiki pages.
-3. Synthesize the answer from the wiki.
-4. If the answer is durable, save it to `pages/queries/` or `pages/syntheses/`.
-5. Append a query entry to `log.md` if durable work was added.
+1. Read `hotcache.md` first.
+2. If `hotcache.md` is sufficient, answer or act from it without scanning more files.
+3. If more context is needed, read `index.md`.
+4. Read the most relevant wiki pages.
+5. Synthesize the answer from the wiki.
+6. If the answer is durable, save it to `pages/queries/` or `pages/syntheses/`.
+7. Append a query entry to `log.md` if durable work was added.
+
+## Hotcache Rules
+- `hotcache.md` is a rolling operational cache, not a full history.
+- Keep it under 500 words.
+- Update it after meaningful work that changes current priorities, recent fixes, active risks, or likely-next tasks.
+- Prefer summarizing the latest few interactions over duplicating `log.md`.
+- Use it to reduce unnecessary file reads at the start of future sessions.
+- If `hotcache.md` conflicts with a more detailed canonical page, treat the canonical page as source of truth and refresh the cache.
 
 ### Lint
 When the user asks for cleanup or health check:
@@ -115,6 +126,7 @@ When the user asks for cleanup or health check:
   - improve the wiki structure,
   - or identify a gap that should become a new page.
 - Do not answer as if the wiki does not exist.
+- Read `hotcache.md` before doing anything else.
 - Before major edits, explain what part of the wiki will be changed.
 - After edits, summarize the changed files and the resulting new state.
 

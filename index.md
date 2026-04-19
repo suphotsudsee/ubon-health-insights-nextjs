@@ -3,6 +3,7 @@
 This is the entry point for the vault. Read this file first when navigating or answering questions from the wiki.
 
 ## Core
+- [hotcache.md](./hotcache.md): rolling cache of the most recent high-value session context, intended to be read before the wider index.
 - [CLAUDE.md](./CLAUDE.md): schema, workflow rules, and operating contract for the agent.
 - [log.md](./log.md): chronological record of ingests, queries, and maintenance.
 - [meta/folder-conventions.md](./meta/folder-conventions.md): folder and naming rules.

@@ -61,6 +61,7 @@ export function FinanceDashboard() {
   const financeData = (data?.financeData || []) as FinanceBreakdownRecord[];
   const monthList = data?.monthList || [];
   const healthUnits = data?.healthUnits || [];
+  const fiscalMonthList = monthList.length === 12 ? [...monthList.slice(9), ...monthList.slice(0, 9)] : monthList;
 
   const unitCodes =
     amphoe === "all"
@@ -74,7 +75,7 @@ export function FinanceDashboard() {
   const totalIncome = filteredFinance.reduce((sum, f) => sum + f.income, 0);
   const totalExpense = filteredFinance.reduce((sum, f) => sum + f.expense, 0);
 
-  const chartData = monthList.slice(0, 3).map((month) => {
+  const chartData = fiscalMonthList.map((month) => {
     const monthData = filteredFinance.filter((f) => f.month === month);
     return {
       month,

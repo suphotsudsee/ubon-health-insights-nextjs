@@ -22,3 +22,8 @@ Append-only operational timeline for the wiki.
 - Added domain maps for `finance`, `kpi`, `settings/admin`, and `api surface`.
 - Linked each domain note back to the codebase hub and across related domains so the graph has more structure.
 - Extended `index.md` and the project hub to expose the new domain-level navigation layer.
+
+## [2026-04-19] lint | add hotcache workflow
+- Added `hotcache.md` as a rolling short-term cache for the most recent high-value session context.
+- Updated `CLAUDE.md` so future sessions read `hotcache.md` before `index.md` or broader vault navigation.
+- Updated `index.md` to catalog the new hotcache entry point.
