@@ -178,12 +178,18 @@
   },
   "active": "3823e744f0080699",
   "lastOpenFiles": [
-    "hotcache.md",
+    "tmp/expense-samples/sample-4.xlsx",
+    "tmp/expense-samples/sample-3.xlsx",
+    "tmp/expense-samples/sample-2.xlsx",
+    "tmp/expense-samples/sample-1.xlsx",
+    "tmp/expense-samples",
+    "tmp",
     "pages/syntheses/api-surface-map.md",
+    "pages/syntheses/kpi-domain-map.md",
+    "hotcache.md",
     "pages/syntheses/2026-04-19-second-brain-operating-model.md",
     "pages/projects/ubon-health-insights-code-map.md",
     "pages/syntheses/settings-admin-domain-map.md",
-    "pages/syntheses/kpi-domain-map.md",
     "pages/syntheses/finance-domain-map.md",
     "index.md",
     "pages/sources/2026-04-19-llm-wiki-pattern.md",
@@ -207,13 +213,7 @@
     "raw/sources/2026-04-19-llm-wiki-pattern.md",
     "meta/folder-conventions.md",
     "log.md",
-    "CLAUDE.md",
     "templates",
-    "meta",
-    "pages/topics",
-    "pages/syntheses",
-    "pages/sources",
-    "pages/queries",
-    "pages/projects"
+    "meta"
   ]
 }
