@@ -31,6 +31,20 @@ export type FinanceImportFile = {
   buffer: Buffer;
 };
 
+export type FinanceImportPreviewItem = {
+  sourceCode: string;
+  unitCode: string;
+  unitName: string;
+  month: number;
+  fiscalYear: number;
+  income: number;
+  expense: number;
+  status: "ready" | "unknown-unit" | "ambiguous-unit" | "unknown-period";
+  reason?: string;
+  files?: string[];
+  willUpdate: boolean;
+};
+
 export type FinanceImportIssue = {
   sourceCode: string;
   unitCode: string;
@@ -44,6 +58,15 @@ export type FinanceImportResult = {
   updated: number;
   skipped: number;
   detectedUnits: string[];
+  issues: FinanceImportIssue[];
+};
+
+export type FinanceImportPreview = {
+  processedFiles: number;
+  readyCount: number;
+  issueCount: number;
+  detectedUnits: string[];
+  items: FinanceImportPreviewItem[];
   issues: FinanceImportIssue[];
 };
 
@@ -338,37 +361,9 @@ async function importExpenseDocumentFiles(
     recorder?: string;
   }
 ): Promise<FinanceImportResult> {
-  const grouped = new Map<string, ParsedFinanceDocumentGroup>();
-  const issues: FinanceImportIssue[] = [];
-
-  for (const file of files) {
-    const parsed = parseExpenseDocumentWorkbook(file.buffer, file.name);
-    issues.push(...parsed.issues);
-
-    if (!parsed.record) {
-      continue;
-    }
-
-    const key = `${parsed.record.normalizedUnitName}:${parsed.record.month}`;
-    const current: ParsedFinanceDocumentGroup =
-      grouped.get(key) ?? {
-        ...parsed.record,
-        expense: 0,
-        expenseBreakdown: {} as Record<string, number>,
-        fileNames: [],
-      };
-
-    current.expense += parsed.record.expense;
-    current.fileNames.push(file.name);
-
-    for (const [account, amount] of Object.entries(parsed.record.expenseBreakdown)) {
-      current.expenseBreakdown[account] = (current.expenseBreakdown[account] ?? 0) + amount;
-    }
-
-    grouped.set(key, current);
-  }
-
-  const records = Array.from(grouped.values());
+  const collected = collectExpenseDocumentRecords(files);
+  const records = collected.records;
+  const issues: FinanceImportIssue[] = [...collected.issues];
   const months = [...new Set(records.map((record) => record.month))];
   const units = await prisma.healthUnit.findMany({
     select: { id: true, code: true, name: true },
@@ -476,6 +471,253 @@ async function importExpenseDocumentFiles(
     updated,
     skipped: issues.length,
     detectedUnits: [...new Set(records.map((record) => record.unitName))],
+    issues,
+  };
+}
+
+function collectExpenseDocumentRecords(files: FinanceImportFile[]) {
+  const grouped = new Map<string, ParsedFinanceDocumentGroup>();
+  const issues: FinanceImportIssue[] = [];
+
+  for (const file of files) {
+    const parsed = parseExpenseDocumentWorkbook(file.buffer, file.name);
+    issues.push(...parsed.issues);
+
+    if (!parsed.record) {
+      continue;
+    }
+
+    const key = `${parsed.record.normalizedUnitName}:${parsed.record.month}`;
+    const current: ParsedFinanceDocumentGroup =
+      grouped.get(key) ?? {
+        ...parsed.record,
+        expense: 0,
+        expenseBreakdown: {} as Record<string, number>,
+        fileNames: [],
+      };
+
+    current.expense += parsed.record.expense;
+    current.fileNames.push(file.name);
+
+    for (const [account, amount] of Object.entries(parsed.record.expenseBreakdown)) {
+      current.expenseBreakdown[account] = (current.expenseBreakdown[account] ?? 0) + amount;
+    }
+
+    grouped.set(key, current);
+  }
+
+  return {
+    records: Array.from(grouped.values()),
+    issues,
+  };
+}
+
+export async function previewFinanceFiles(
+  files: FinanceImportFile[],
+  options: {
+    fiscalYear: number;
+  }
+): Promise<FinanceImportPreview> {
+  const summaryFiles: FinanceImportFile[] = [];
+  const expenseDocumentFiles: FinanceImportFile[] = [];
+  const issues: FinanceImportIssue[] = [];
+  const items: FinanceImportPreviewItem[] = [];
+  const detectedUnits = new Set<string>();
+
+  for (const file of files) {
+    const kind = detectWorkbookKind(file.buffer);
+    if (kind === "summary") {
+      summaryFiles.push(file);
+    } else if (kind === "expense-document") {
+      expenseDocumentFiles.push(file);
+    } else {
+      issues.push({
+        sourceCode: file.name,
+        unitCode: "",
+        month: null,
+        reason: `Unsupported workbook format in file ${file.name}`,
+      });
+    }
+  }
+
+  const summaryResults = summaryFiles.map((file) => ({
+    file,
+    parsed: parseFinanceWorkbook(file.buffer),
+  }));
+  const expenseCollected = collectExpenseDocumentRecords(expenseDocumentFiles);
+  issues.push(...summaryResults.flatMap((result) => result.parsed.issues));
+  issues.push(...expenseCollected.issues);
+
+  const summaryUnitCodes = [
+    ...new Set(summaryResults.flatMap((result) => result.parsed.records.map((record) => record.unitCode))),
+  ];
+  const months = [
+    ...new Set([
+      ...summaryResults.flatMap((result) => result.parsed.records.map((record) => record.month)),
+      ...expenseCollected.records.map((record) => record.month),
+    ]),
+  ];
+
+  const [codedUnits, allUnits, periods] = await Promise.all([
+    summaryUnitCodes.length > 0
+      ? prisma.healthUnit.findMany({
+          where: { code: { in: summaryUnitCodes } },
+          select: { id: true, code: true, name: true },
+        })
+      : Promise.resolve([]),
+    expenseCollected.records.length > 0
+      ? prisma.healthUnit.findMany({
+          select: { id: true, code: true, name: true },
+        })
+      : Promise.resolve([]),
+    months.length > 0
+      ? prisma.fiscalPeriod.findMany({
+          where: {
+            fiscalYear: options.fiscalYear,
+            month: { in: months },
+          },
+          select: { id: true, month: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const periodMap = new Map(periods.map((period) => [period.month, period]));
+  const codedUnitMap = new Map(codedUnits.map((unit) => [unit.code, unit]));
+  const unitsByNormalizedName = new Map<string, Array<{ id: number; code: string; name: string }>>();
+  for (const unit of allUnits) {
+    const key = normalizeUnitName(unit.name);
+    unitsByNormalizedName.set(key, [...(unitsByNormalizedName.get(key) ?? []), unit]);
+  }
+
+  const readyPairs: Array<{ healthUnitId: number; fiscalPeriodId: number }> = [];
+
+  for (const result of summaryResults) {
+    for (const record of result.parsed.records) {
+      const unit = codedUnitMap.get(record.unitCode);
+      const period = periodMap.get(record.month);
+      const status = !unit
+        ? "unknown-unit"
+        : !period
+        ? "unknown-period"
+        : "ready";
+      const reason =
+        status === "unknown-unit"
+          ? `Health unit code ${record.unitCode} not found`
+          : status === "unknown-period"
+          ? `Fiscal period for month ${record.month} not found`
+          : undefined;
+
+      items.push({
+        sourceCode: record.sourceCode || result.file.name,
+        unitCode: unit?.code || record.unitCode,
+        unitName: unit?.name || record.unitCode,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        income: record.income,
+        expense: record.expense,
+        status,
+        reason,
+        files: [result.file.name],
+        willUpdate: false,
+      });
+
+      if (unit?.name) detectedUnits.add(unit.name);
+      if (status === "ready") {
+        readyPairs.push({ healthUnitId: unit!.id, fiscalPeriodId: period!.id });
+      }
+    }
+  }
+
+  for (const record of expenseCollected.records) {
+    const matchedUnits = unitsByNormalizedName.get(record.normalizedUnitName) ?? [];
+    const period = periodMap.get(record.month);
+    const status =
+      matchedUnits.length === 0
+        ? "unknown-unit"
+        : matchedUnits.length > 1
+        ? "ambiguous-unit"
+        : !period
+        ? "unknown-period"
+        : "ready";
+    const reason =
+      status === "unknown-unit"
+        ? `Health unit ${record.unitName} not found`
+        : status === "ambiguous-unit"
+        ? `Health unit ${record.unitName} is ambiguous`
+        : status === "unknown-period"
+        ? `Fiscal period for month ${record.month} not found`
+        : undefined;
+
+    items.push({
+      sourceCode: record.sourceCode,
+      unitCode: matchedUnits[0]?.code || "",
+      unitName: matchedUnits[0]?.name || record.unitName,
+      month: record.month,
+      fiscalYear: options.fiscalYear,
+      income: 0,
+      expense: record.expense,
+      status,
+      reason,
+      files: record.fileNames,
+      willUpdate: false,
+    });
+
+    detectedUnits.add(record.unitName);
+    if (status === "ready") {
+      readyPairs.push({ healthUnitId: matchedUnits[0].id, fiscalPeriodId: period!.id });
+    }
+  }
+
+  const uniqueReadyPairs = Array.from(
+    new Map(readyPairs.map((pair) => [`${pair.healthUnitId}:${pair.fiscalPeriodId}`, pair])).values()
+  );
+
+  const existingRecords =
+    uniqueReadyPairs.length > 0
+      ? await prisma.financeRecord.findMany({
+          where: {
+            OR: uniqueReadyPairs.map((pair) => ({
+              healthUnitId: pair.healthUnitId,
+              fiscalPeriodId: pair.fiscalPeriodId,
+            })),
+          },
+          select: {
+            id: true,
+            healthUnitId: true,
+            fiscalPeriodId: true,
+          },
+        })
+      : [];
+
+  const existingMap = new Set(existingRecords.map((record) => `${record.healthUnitId}:${record.fiscalPeriodId}`));
+  const periodIdMap = new Map(periods.map((period) => [period.month, period.id]));
+  const unitIdByCode = new Map(codedUnits.map((unit) => [unit.code, unit.id]));
+  const unitIdByName = new Map(allUnits.map((unit) => [unit.name, unit.id]));
+
+  for (const item of items) {
+    if (item.status !== "ready") {
+      continue;
+    }
+
+    const healthUnitId =
+      (item.unitCode ? unitIdByCode.get(item.unitCode) : undefined) ??
+      unitIdByName.get(item.unitName);
+    const fiscalPeriodId = periodIdMap.get(item.month);
+
+    if (healthUnitId && fiscalPeriodId) {
+      item.willUpdate = existingMap.has(`${healthUnitId}:${fiscalPeriodId}`);
+    }
+  }
+
+  return {
+    processedFiles: files.length,
+    readyCount: items.filter((item) => item.status === "ready").length,
+    issueCount: issues.length + items.filter((item) => item.status !== "ready").length,
+    detectedUnits: Array.from(detectedUnits).sort((a, b) => a.localeCompare(b, "th")),
+    items: items.sort((a, b) => {
+      if (a.unitName === b.unitName) return a.month - b.month;
+      return a.unitName.localeCompare(b.unitName, "th");
+    }),
     issues,
   };
 }

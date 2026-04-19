@@ -77,6 +77,34 @@ type ImportResponse = {
   }>;
 };
 
+type ImportPreviewItem = {
+  sourceCode: string;
+  unitCode: string;
+  unitName: string;
+  month: number;
+  fiscalYear: number;
+  income: number;
+  expense: number;
+  status: "ready" | "unknown-unit" | "ambiguous-unit" | "unknown-period";
+  reason?: string;
+  files?: string[];
+  willUpdate: boolean;
+};
+
+type ImportPreviewResponse = {
+  processedFiles: number;
+  readyCount: number;
+  issueCount: number;
+  detectedUnits: string[];
+  items: ImportPreviewItem[];
+  issues: Array<{
+    sourceCode: string;
+    unitCode: string;
+    month: number | null;
+    reason: string;
+  }>;
+};
+
 type FinanceAccountItem = {
   id: number;
   type: "income" | "expense";
@@ -116,6 +144,29 @@ function formatAmount(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value || 0);
+}
+
+function formatMonthLabel(period: FiscalPeriodOption | null) {
+  if (!period) {
+    return "-";
+  }
+
+  return period.monthNameTh ? `${period.monthNameTh} ${period.fiscalYear}` : `Month ${period.month} / ${period.fiscalYear}`;
+}
+
+function previewStatusLabel(status: ImportPreviewItem["status"]) {
+  switch (status) {
+    case "ready":
+      return "Ready";
+    case "unknown-unit":
+      return "Unknown unit";
+    case "ambiguous-unit":
+      return "Ambiguous unit";
+    case "unknown-period":
+      return "Unknown period";
+    default:
+      return status;
+  }
 }
 
 function toNumber(value: string) {
@@ -165,6 +216,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const [accounts, setAccounts] = useState<FinanceAccountItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState(String(currentPeriod?.fiscalYear ?? years[0] ?? ""));
+  const [selectedMonth, setSelectedMonth] = useState(String(currentPeriod?.month ?? ""));
   const [form, setForm] = useState<FinanceRecordFormState>(createEmptyForm(currentPeriod?.id));
   const [editingRecord, setEditingRecord] = useState<FinanceRecordItem | null>(null);
   const [editForm, setEditForm] = useState<FinanceRecordFormState>(createEmptyForm());
@@ -187,7 +239,9 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [importing, setImporting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportPreviewResponse | null>(null);
 
   const filteredRecords = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -214,6 +268,42 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     return fiscalPeriods.filter((period) => period.fiscalYear === year && period.id);
   }, [fiscalPeriods, selectedYear]);
 
+  const recordsForSelectedMonth = useMemo(() => {
+    const month = Number(selectedMonth);
+    if (!month) {
+      return [];
+    }
+    return records.filter((record) => record.month === month);
+  }, [records, selectedMonth]);
+
+  const monthlyImportRows = useMemo(() => {
+    return units
+      .map((unit) => {
+        const record = recordsForSelectedMonth.find((item) => item.healthUnitId === unit.id);
+        return {
+          ...unit,
+          record,
+          status: record ? "imported" : "missing",
+        };
+      })
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [recordsForSelectedMonth, units]);
+
+  const selectedMonthPeriod = useMemo(() => {
+    const month = Number(selectedMonth);
+    return periodsForSelectedYear.find((period) => period.month === month) ?? null;
+  }, [periodsForSelectedYear, selectedMonth]);
+
+  const importedUnitCount = useMemo(
+    () => monthlyImportRows.filter((row) => row.status === "imported").length,
+    [monthlyImportRows]
+  );
+
+  const missingUnitCount = useMemo(
+    () => monthlyImportRows.filter((row) => row.status === "missing").length,
+    [monthlyImportRows]
+  );
+
   useEffect(() => {
     if (!selectedYear && (currentPeriod?.fiscalYear || years[0])) {
       setSelectedYear(String(currentPeriod?.fiscalYear ?? years[0]));
@@ -223,6 +313,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   useEffect(() => {
     if (periodsForSelectedYear.length === 0) {
       setForm((current) => ({ ...current, fiscalPeriodId: "" }));
+      setSelectedMonth("");
       return;
     }
 
@@ -241,6 +332,20 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       };
     });
   }, [currentPeriod?.id, periodsForSelectedYear]);
+
+  useEffect(() => {
+    if (periodsForSelectedYear.length === 0) {
+      return;
+    }
+
+    const stillSelected = periodsForSelectedYear.some((period) => String(period.month) === selectedMonth);
+    if (stillSelected) {
+      return;
+    }
+
+    const fallbackMonth = currentPeriod?.fiscalYear === Number(selectedYear) ? currentPeriod?.month : periodsForSelectedYear[0]?.month;
+    setSelectedMonth(fallbackMonth ? String(fallbackMonth) : "");
+  }, [currentPeriod?.fiscalYear, currentPeriod?.month, periodsForSelectedYear, selectedMonth, selectedYear]);
 
   const incomeOptions = useMemo(() => {
     return Array.from(
@@ -318,6 +423,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       folderInputRef.current.setAttribute("multiple", "");
     }
   }, []);
+
+  useEffect(() => {
+    setImportPreview(null);
+  }, [selectedFiles, selectedYear]);
 
   function updateLines(
     target: "incomeLines" | "expenseLines",
@@ -525,6 +634,41 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       setError(importError instanceof Error ? importError.message : "นำเข้าข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setImporting(false);
+    }
+  }
+
+  async function handlePreviewImport() {
+    if (selectedFiles.length === 0) {
+      setError("Please select Excel files first");
+      return;
+    }
+
+    resetFeedback();
+    setPreviewing(true);
+    setImportPreview(null);
+
+    try {
+      const payload = new FormData();
+      selectedFiles.forEach((file) => payload.append("files", file));
+      payload.set("fiscalYear", selectedYear);
+      payload.set("mode", "preview");
+
+      const response = await fetch("/api/finance/import", {
+        method: "POST",
+        body: payload,
+      });
+      const body = (await response.json()) as ImportPreviewResponse & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error || "Preview failed");
+      }
+
+      setImportPreview(body);
+      setMessage(`Preview ready: ${body.readyCount} ready, ${body.issueCount} issues`);
+    } catch (previewError) {
+      setError(previewError instanceof Error ? previewError.message : "Preview failed");
+    } finally {
+      setPreviewing(false);
     }
   }
 
@@ -811,10 +955,90 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                   <p className="text-muted-foreground">ตัวอย่าง: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
                 </div>
               ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => void handlePreviewImport()}
+                disabled={previewing || importing || !selectedYear || selectedFiles.length === 0}
+              >
+                {previewing ? "Previewing..." : "Preview before import"}
+              </Button>
               <Button type="button" className="w-full" onClick={() => void handleImport()} disabled={importing || !selectedYear}>
                 <Upload className="mr-2 h-4 w-4" />
                 {importing ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
               </Button>
+              {importPreview ? (
+                <div className="rounded-xl border bg-muted/20 p-4 text-sm">
+                  <div className="grid gap-3 md:grid-cols-4">
+                    <div>
+                      <p className="text-muted-foreground">Processed files</p>
+                      <p className="text-lg font-semibold">{importPreview.processedFiles}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Ready</p>
+                      <p className="text-lg font-semibold">{importPreview.readyCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Issues</p>
+                      <p className="text-lg font-semibold">{importPreview.issueCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Detected units</p>
+                      <p className="text-lg font-semibold">{importPreview.detectedUnits.length}</p>
+                    </div>
+                  </div>
+                  {importPreview.detectedUnits.length > 0 ? (
+                    <p className="mt-3 text-muted-foreground">Units: {importPreview.detectedUnits.join(", ")}</p>
+                  ) : null}
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-xs">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="pb-2 font-medium">Unit</th>
+                          <th className="pb-2 font-medium">Month</th>
+                          <th className="pb-2 font-medium text-right">Expense</th>
+                          <th className="pb-2 font-medium">Status</th>
+                          <th className="pb-2 font-medium">Action</th>
+                          <th className="pb-2 font-medium">Files</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.items.slice(0, 20).map((item, index) => (
+                          <tr key={`${item.sourceCode}-${item.unitCode}-${item.month}-${index}`} className="border-b last:border-b-0">
+                            <td className="py-2">
+                              <div className="font-medium">{item.unitName || "-"}</div>
+                              <div className="text-muted-foreground">{item.unitCode || item.sourceCode}</div>
+                            </td>
+                            <td className="py-2">{item.month}/{item.fiscalYear}</td>
+                            <td className="py-2 text-right">{formatAmount(item.expense)}</td>
+                            <td className="py-2">
+                              <span className={item.status === "ready" ? "text-emerald-600" : "text-amber-600"}>
+                                {previewStatusLabel(item.status)}
+                              </span>
+                              {item.reason ? <div className="text-muted-foreground">{item.reason}</div> : null}
+                            </td>
+                            <td className="py-2">{item.willUpdate ? "Update existing" : "Create new"}</td>
+                            <td className="py-2 text-muted-foreground">{item.files?.join(", ") || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {importPreview.items.length > 20 ? (
+                    <p className="mt-3 text-xs text-muted-foreground">Showing first 20 of {importPreview.items.length} preview rows.</p>
+                  ) : null}
+                  {importPreview.issues.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {importPreview.issues.slice(0, 5).map((issue, index) => (
+                        <div key={`${issue.sourceCode}-${index}`} className="rounded-md bg-background px-3 py-2 text-xs text-muted-foreground">
+                          {issue.sourceCode || "-"}: {issue.reason}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               {lastImport ? (
                 <div className="rounded-xl border bg-muted/20 p-4 text-sm">
                   <p>ประมวลผล {lastImport.processedFiles} ไฟล์</p>
@@ -833,6 +1057,109 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                       ))}
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Monthly import dashboard</CardTitle>
+              <CardDescription>Track imported, missing, and preview-ready units for the selected month.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-[220px_1fr]">
+                <Field label="Dashboard month">
+                  <select
+                    value={selectedMonth}
+                    onChange={(event) => setSelectedMonth(event.target.value)}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    {periodsForSelectedYear.map((period) => (
+                      <option key={period.id} value={period.month}>
+                        {formatMonthLabel(period)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-sm text-muted-foreground">Month</p>
+                    <p className="text-lg font-semibold">{formatMonthLabel(selectedMonthPeriod)}</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-sm text-muted-foreground">Imported</p>
+                    <p className="text-lg font-semibold">{importedUnitCount}</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-sm text-muted-foreground">Missing</p>
+                    <p className="text-lg font-semibold">{missingUnitCount}</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-sm text-muted-foreground">Ready in preview</p>
+                    <p className="text-lg font-semibold">
+                      {(importPreview?.items ?? []).filter((item) => item.month === Number(selectedMonth) && item.status === "ready").length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="pb-3 font-medium">Unit</th>
+                      <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium text-right">Income</th>
+                      <th className="pb-3 font-medium text-right">Expense</th>
+                      <th className="pb-3 font-medium text-right">Balance</th>
+                      <th className="pb-3 font-medium">Recorder</th>
+                      <th className="pb-3 font-medium">Preview</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyImportRows.map((row) => {
+                      const previewItem = (importPreview?.items ?? []).find(
+                        (item) => item.month === Number(selectedMonth) && (item.unitCode === row.code || item.unitName === row.name)
+                      );
+
+                      return (
+                        <tr key={row.id} className="border-b last:border-b-0">
+                          <td className="py-3">
+                            <div className="font-medium">{row.code}</div>
+                            <div className="text-muted-foreground">{row.name}</div>
+                          </td>
+                          <td className="py-3">
+                            <span className={row.status === "imported" ? "text-emerald-600" : "text-amber-600"}>
+                              {row.status === "imported" ? "Imported" : "Missing"}
+                            </span>
+                          </td>
+                          <td className="py-3 text-right">{formatAmount(row.record?.income ?? 0)}</td>
+                          <td className="py-3 text-right">{formatAmount(row.record?.expense ?? 0)}</td>
+                          <td className="py-3 text-right">{formatAmount(row.record?.balance ?? 0)}</td>
+                          <td className="py-3 text-muted-foreground">{row.record?.recorder || "-"}</td>
+                          <td className="py-3">
+                            {previewItem ? (
+                              <div>
+                                <div className={previewItem.status === "ready" ? "text-emerald-600" : "text-amber-600"}>
+                                  {previewStatusLabel(previewItem.status)}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {previewItem.willUpdate ? "Will update existing record" : "Will create new record"}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {!selectedMonth ? (
+                <div className="rounded-xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
+                  Select a month to see import coverage for all units.
                 </div>
               ) : null}
             </CardContent>

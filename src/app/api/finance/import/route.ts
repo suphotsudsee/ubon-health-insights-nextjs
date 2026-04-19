@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { importFinanceFiles } from "@/lib/finance-import";
+import { importFinanceFiles, previewFinanceFiles } from "@/lib/finance-import";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const fileEntries = formData.getAll("files");
   const singleFile = formData.get("file");
+  const mode = String(formData.get("mode") ?? "import");
   const fiscalYearValue = formData.get("fiscalYear");
   const recorder = String(formData.get("recorder") ?? "").trim() || undefined;
 
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
         buffer: Buffer.from(await file.arrayBuffer()),
       }))
     );
+
+    if (mode === "preview") {
+      const preview = await previewFinanceFiles(payload, { fiscalYear });
+      return NextResponse.json(preview);
+    }
 
     const result = await importFinanceFiles(payload, {
       fiscalYear,
