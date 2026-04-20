@@ -1,0 +1,383 @@
+{
+  "description": "รายการบัญชีรายได้ รพ.สต. อบจ.อุบลราชธานี (บัญชี 440404) - 35 รายการ",
+  "sourcePcucode": "0363301",
+  "fiscalYear": 2568,
+  "accounts": [
+    {
+      "type": "income",
+      "accountCode": "4404040101.001",
+      "nameTh": "รายได้ค่ารักษาพยาบาล - ชำระเงิน",
+      "displayOrder": 1,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "8,493.75",
+      "cf": "8,493.75"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040102.001",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิเบิกจ่ายตรง - กรมบัญชีกลาง",
+      "displayOrder": 2,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040102.002",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิเบิกจ่ายตรง - องค์กรปกครองส่วนท้องถิ่น",
+      "displayOrder": 3,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "6,766.75",
+      "cf": "6,766.75"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040102.003",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิเบิกจ่ายตรง - กรุงเทพมหานคร",
+      "displayOrder": 4,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040102.004",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิเบิกจ่ายตรง - เมืองพัทยา",
+      "displayOrder": 5,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040103.001",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิ - หลักประกันสุขภาพถ้วนหน้า",
+      "displayOrder": 6,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "861,162.30",
+      "cf": "861,162.30"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040103.002",
+      "nameTh": "รายได้กองทุนหลักประกันสุขภาพถ้วนหน้า - P&P แบบเหมาจ่ายต่อผู้มีสิทธิ",
+      "displayOrder": 7,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "114,834.00",
+      "cf": "114,834.00"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040103.003",
+      "nameTh": "รายได้กองทุนหลักประกันสุขภาพถ้วนหน้า - ตามเกณฑ์คุณภาพผลงานบริการ (QOF)",
+      "displayOrder": 8,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040103.004",
+      "nameTh": "รายได้เงินสนับสนุนงบค่าใช้จ่ายที่เป็นต้นทุนคงที่จากกองทุนหลักประกันสุขภาพถ้วนหน้า (Fixed cost)",
+      "displayOrder": 9,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040104.001",
+      "nameTh": "รายได้ค่ารักษาพยาบาลสิทธิ - ประกันสังคม",
+      "displayOrder": 10,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "1,100.00",
+      "cf": "1,100.00"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040105.001",
+      "nameTh": "รายได้ค่ารักษาพยาบาลจากกองทุนหรือหน่วยงานอื่น",
+      "displayOrder": 11,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "122,440.00",
+      "cf": "122,440.00"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040106.001",
+      "nameTh": "รายได้จากการขายสินค้าและบริการ",
+      "displayOrder": 12,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040107.001",
+      "nameTh": "รายได้เงินช่วยเหลือจากงบทั่วไป",
+      "displayOrder": 13,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "2,130,527.18",
+      "cf": "2,130,527.18"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040107.002",
+      "nameTh": "รายได้ระหว่างหน่วยงาน - หน่วยงานภายใต้สังกัดอื่นโอนให้กิจการ",
+      "displayOrder": 14,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040108.001",
+      "nameTh": "รายได้ดอกเบี้ยเงินฝากที่สถาบันการเงิน",
+      "displayOrder": 15,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "264.3",
+      "cf": "264.3"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040108.002",
+      "nameTh": "รายได้ดอกเบี้ยเงินลงทุน",
+      "displayOrder": 16,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040109.001",
+      "nameTh": "รายได้ค่าปรับการผิดสัญญา",
+      "displayOrder": 17,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040110.001",
+      "nameTh": "รายได้ค่าเช่า",
+      "displayOrder": 18,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040111.001",
+      "nameTh": "รายได้ค่าขายเวชภัณฑ์",
+      "displayOrder": 19,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040112.001",
+      "nameTh": "รายได้ค่าจำหน่ายเศษของ",
+      "displayOrder": 20,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040113.001",
+      "nameTh": "รายได้จากการบริจาค",
+      "displayOrder": 21,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040113.002",
+      "nameTh": "รายได้จากการบริจาคเพื่อใช้ตามวัตถุประสงค์",
+      "displayOrder": 22,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040113.003",
+      "nameTh": "รายได้จากการบริจาคสินทรัพย์",
+      "displayOrder": 23,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040114.001",
+      "nameTh": "รายได้จากการรับโอนสินทรัพย์ระหว่างหน่วยงาน",
+      "displayOrder": 24,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040115.001",
+      "nameTh": "รายได้ค่าขายเอกสารจัดซื้อจัดจ้าง",
+      "displayOrder": 25,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040116.001",
+      "nameTh": "รายได้จากการขายอสังหาริมทรัพย์เพื่อการลงทุน",
+      "displayOrder": 26,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040117.001",
+      "nameTh": "รายได้จากการขายที่ดินที่มีกรรมสิทธิ์",
+      "displayOrder": 27,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040118.001",
+      "nameTh": "รายได้จากการขายอาคารและสิ่งปลูกสร้าง",
+      "displayOrder": 28,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040119.001",
+      "nameTh": "รายได้จากการขายครุภัณฑ์",
+      "displayOrder": 29,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040120.001",
+      "nameTh": "รายได้จากการขายสินทรัพย์ไม่มีตัวตน",
+      "displayOrder": 30,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040121.001",
+      "nameTh": "หนี้สูญได้รับคืน",
+      "displayOrder": 31,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040122.001",
+      "nameTh": "รายได้เงินอุดหนุนจากหน่วยงานอื่น",
+      "displayOrder": 32,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "7,600.00",
+      "cf": "7,600.00"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040123.001",
+      "nameTh": "รายได้เงินสนับสนุนจากองค์กรปกครองส่วนท้องถิ่นอื่น",
+      "displayOrder": 33,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040199.001",
+      "nameTh": "รายได้อื่น",
+      "displayOrder": 34,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    },
+    {
+      "type": "income",
+      "accountCode": "4404040199.002",
+      "nameTh": "รายได้จากการแลกเปลี่ยนสินทรัพย์",
+      "displayOrder": 35,
+      "isActive": true,
+      "bf": "0",
+      "ledger": "0",
+      "cf": "0"
+    }
+  ],
+  "categories": {
+    "4404040101": "ค่ารักษาพยาบาล",
+    "4404040102": "เบิกจ่ายตรง",
+    "4404040103": "หลักประกันสุขภาพถ้วนหน้า",
+    "4404040104": "ประกันสังคม",
+    "4404040105": "กองทุนหรือหน่วยงานอื่น",
+    "4404040106": "ขายสินค้าและบริการ",
+    "4404040107": "เงินช่วยเหลือ/เงินอุดหนุน",
+    "4404040108": "ดอกเบี้ย",
+    "4404040109": "ค่าปรับ",
+    "4404040110": "ค่าเช่า",
+    "4404040111": "ค่าขายเวชภัณฑ์",
+    "4404040112": "ค่าจำหน่ายเศษของ",
+    "4404040113": "การบริจาค",
+    "4404040114": "รับโอนสินทรัพย์",
+    "4404040115": "ค่าขายเอกสารจัดซื้อจัดจ้าง",
+    "4404040116": "ขายอสังหาริมทรัพย์เพื่อการลงทุน",
+    "4404040117": "ขายที่ดิน",
+    "4404040118": "ขายอาคารและสิ่งปลูกส้าง",
+    "4404040119": "ขายครุภัณฑ์",
+    "4404040120": "ขายสินทรัพย์ไม่มีตัวตน",
+    "4404040121": "หนี้สูญได้รับคืน",
+    "4404040122": "เงินอุดหนุนจากหน่วยงานอื่น",
+    "4404040123": "เงินสนับสนุนจาก อปท. อื่น",
+    "4404040199": "รายได้อื่น"
+  }
+}

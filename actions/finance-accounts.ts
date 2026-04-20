@@ -8,6 +8,7 @@ import type { ApiResponse } from '@/types'
 
 const createFinanceAccountSchema = z.object({
   type: z.nativeEnum(FinanceAccountType),
+  accountCode: z.string().max(30).optional(),
   nameTh: z.string().min(1).max(255),
   displayOrder: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
@@ -17,7 +18,8 @@ const updateFinanceAccountSchema = createFinanceAccountSchema.partial()
 
 export async function syncFinanceAccountsFromBreakdown(
   type: FinanceAccountType,
-  names: string[]
+  names: string[],
+  accountCodes?: Record<string, string>
 ) {
   const uniqueNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)))
   if (uniqueNames.length === 0) {
@@ -25,6 +27,7 @@ export async function syncFinanceAccountsFromBreakdown(
   }
 
   for (const nameTh of uniqueNames) {
+    const accountCode = accountCodes?.[nameTh] ?? null
     await prisma.financeAccount.upsert({
       where: {
         type_nameTh: {
@@ -32,10 +35,11 @@ export async function syncFinanceAccountsFromBreakdown(
           nameTh,
         },
       },
-      update: {},
+      update: accountCode ? { accountCode } : {},
       create: {
         type,
         nameTh,
+        accountCode,
       },
     })
   }
@@ -74,6 +78,7 @@ export async function createFinanceAccountAdmin(data: unknown): Promise<ApiRespo
     await prisma.financeAccount.create({
       data: {
         type: validated.type,
+        accountCode: validated.accountCode?.trim() || null,
         nameTh: validated.nameTh.trim(),
         displayOrder: validated.displayOrder ?? 0,
         isActive: validated.isActive ?? true,
@@ -105,6 +110,19 @@ export async function updateFinanceAccountAdmin(id: number, data: unknown): Prom
     const nextType = validated.type ?? existing.type
     const nextName = validated.nameTh?.trim() ?? existing.nameTh
 
+    // Check accountCode uniqueness if being updated
+    if (validated.accountCode !== undefined) {
+      const codeDuplicate = await prisma.financeAccount.findFirst({
+        where: {
+          id: { not: id },
+          accountCode: validated.accountCode?.trim() || null,
+        },
+      })
+      if (codeDuplicate) {
+        return { success: false, error: 'Account code already exists' }
+      }
+    }
+
     const duplicate = await prisma.financeAccount.findFirst({
       where: {
         id: { not: id },
@@ -121,6 +139,7 @@ export async function updateFinanceAccountAdmin(id: number, data: unknown): Prom
       where: { id },
       data: {
         type: validated.type,
+        accountCode: validated.accountCode !== undefined ? (validated.accountCode?.trim() || null) : undefined,
         nameTh: validated.nameTh?.trim(),
         displayOrder: validated.displayOrder,
         isActive: validated.isActive,

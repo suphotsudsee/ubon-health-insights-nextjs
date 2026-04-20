@@ -20,6 +20,7 @@ services:
     environment:
       - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-12345678}
       - MARIADB_DATABASE=${DB_NAME:-ubon_health}
+<<<<<<< HEAD
     volumes:
       - ubon-db-data:/var/lib/mysql
     networks:
@@ -99,3 +100,83 @@ networks:
 
 volumes:
   ubon-db-data:
+=======
+    volumes:
+      - ubon-db-data:/var/lib/mysql
+    networks:
+      - ubon-network
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Next.js Application
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ubon-health-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3010}:3010"
+    environment:
+      # Database connection
+      - DATABASE_URL=${DATABASE_URL:-mysql://root:${DB_ROOT_PASSWORD:-12345678}@db:${DB_PORT:-3306}/${DB_NAME:-ubon_health}}
+      
+      # NextAuth.js configuration
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3010}}
+      - PORT=${PORT:-3010}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
+      
+      # Application environment
+      - NODE_ENV=production
+      
+      # Optional: OAuth providers
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
+      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ubon-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Optional: Adminer (Database Management UI)
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    container_name: ubon-health-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ubon-network
+    profiles:
+      - admin
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  ubon-network:
+    driver: bridge
+
+volumes:
+  ubon-db-data:
+>>>>>>> 2fcc77a (refactor: remove src/ duplicate, add finance accountCode)

@@ -31,3 +31,12 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+# State files
+state/
+
+# Dev logs
+.next-dev.err.log
+.next-dev.out.log
+
+# Environment (all, not just .local)
+.env
