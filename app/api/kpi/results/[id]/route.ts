@@ -1,1 +1,1 @@
-export { GET, PUT, DELETE, PATCH } from "@/src/app/api/kpi/results/[id]/route";
+export { GET, PUT, DELETE, PATCH } from "@/app/api/kpi-results/[id]/route";
