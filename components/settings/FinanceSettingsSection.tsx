@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -390,11 +390,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       const response = await fetch(`/api/finance/records?pageSize=500${year}`, { cache: "no-store" });
       const body = (await response.json()) as { records?: FinanceRecordItem[]; error?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "โหลดข้อมูลการเงินไม่สำเร็จ");
       }
       setRecords(body.records || []);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "เนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(loadError instanceof Error ? loadError.message : "โหลดข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setIsLoading(false);
     }
@@ -405,11 +405,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       const response = await fetch("/api/finance-accounts", { cache: "no-store" });
       const body = (await response.json()) as FinanceAccountItem[] | { error?: string };
       if (!response.ok) {
-        throw new Error((body as { error?: string }).error || "เนเธซเธฅเธ”เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เนเนเธฅเธฐเธฃเธฒเธขเธเนเธฒเธขเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error((body as { error?: string }).error || "โหลดรายการรายได้และรายจ่ายไม่สำเร็จ");
       }
       setAccounts(body as FinanceAccountItem[]);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "เนเธซเธฅเธ”เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เนเนเธฅเธฐเธฃเธฒเธขเธเนเธฒเธขเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(loadError instanceof Error ? loadError.message : "โหลดรายการรายได้และรายจ่ายไม่สำเร็จ");
     }
   }
 
@@ -506,15 +506,15 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เน€เธเธดเนเธกเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "เพิ่มข้อมูลการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เน€เธเธดเนเธกเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่มข้อมูลการเงินเรียบร้อยแล้ว");
       setForm(createEmptyForm(currentPeriod?.id));
       await loadRecords();
       await loadAccounts();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เน€เธเธดเนเธกเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(saveError instanceof Error ? saveError.message : "เพิ่มข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
@@ -560,22 +560,22 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "แก้ไขข้อมูลการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "แก้ไขข้อมูลการเงินเรียบร้อยแล้ว");
       setEditingRecord(null);
       await loadRecords();
       await loadAccounts();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(saveError instanceof Error ? saveError.message : "แก้ไขข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDelete(record: FinanceRecordItem) {
-    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธ ${record.unitCode} ${record.monthNameTh} ${record.fiscalYear} ?`)) {
+    if (!window.confirm(`ยืนยันการลบข้อมูลการเงิน ${record.unitCode} ${record.monthNameTh} ${record.fiscalYear} ?`)) {
       return;
     }
 
@@ -586,13 +586,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       const response = await fetch(`/api/finance/records/${record.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เธฅเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "ลบข้อมูลการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เธฅเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบข้อมูลการเงินเรียบร้อยแล้ว");
       await loadRecords();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เธฅเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(deleteError instanceof Error ? deleteError.message : "ลบข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
@@ -600,7 +600,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
   async function handleImport() {
     if (selectedFiles.length === 0) {
-      setError("เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเนเธเธฅเน Excel");
+      setError("กรุณาเลือกไฟล์ Excel");
       return;
     }
 
@@ -621,11 +621,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       const body = (await response.json()) as ImportResponse & { error?: string };
 
       if (!response.ok) {
-        throw new Error(body.error || "เธเธณเน€เธเนเธฒเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "นำเข้าข้อมูลการเงินไม่สำเร็จ");
       }
 
       setLastImport(body);
-      setMessage(`เธเธณเน€เธเนเธฒเธชเธณเน€เธฃเนเธ เน€เธเธดเนเธกเนเธซเธกเน ${body.imported} เธเธฃเธฑเธเธเธฃเธธเธ ${body.updated} เธเนเธฒเธก ${body.skipped}`);
+      setMessage(`นำเข้าสำเร็จ เพิ่มใหม่ ${body.imported} ปรับปรุง ${body.updated} ข้าม ${body.skipped}`);
       setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -636,7 +636,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       await loadRecords();
       await loadAccounts();
     } catch (importError) {
-      setError(importError instanceof Error ? importError.message : "เธเธณเน€เธเนเธฒเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(importError instanceof Error ? importError.message : "นำเข้าข้อมูลการเงินไม่สำเร็จ");
     } finally {
       setImporting(false);
     }
@@ -726,10 +726,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เน€เธเธดเนเธก master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "เพิ่ม master รายการการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เน€เธเธดเนเธก master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "เพิ่ม master รายการการเงินเรียบร้อยแล้ว");
       setAccountForm({
         type: "income",
         accountCode: "",
@@ -739,7 +739,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       });
       await loadAccounts();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เน€เธเธดเนเธก master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(saveError instanceof Error ? saveError.message : "เพิ่ม master รายการการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
@@ -780,21 +780,21 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เนเธเนเนเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "แก้ไข master รายการการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เนเธเนเนเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "แก้ไข master รายการการเงินเรียบร้อยแล้ว");
       setEditingAccount(null);
       await loadAccounts();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เนเธเนเนเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(saveError instanceof Error ? saveError.message : "แก้ไข master รายการการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteAccount(account: FinanceAccountItem) {
-    if (!window.confirm(`เธขเธทเธเธขเธฑเธเธเธฒเธฃเธฅเธเธฃเธฒเธขเธเธฒเธฃ ${account.nameTh} ?`)) {
+    if (!window.confirm(`ยืนยันการลบรายการ ${account.nameTh} ?`)) {
       return;
     }
 
@@ -805,13 +805,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       const response = await fetch(`/api/finance-accounts/${account.id}`, { method: "DELETE" });
       const body = (await response.json()) as { error?: string; message?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เธฅเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+        throw new Error(body.error || "ลบ master รายการการเงินไม่สำเร็จ");
       }
 
-      setMessage(body.message || "เธฅเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง");
+      setMessage(body.message || "ลบ master รายการการเงินเรียบร้อยแล้ว");
       await loadAccounts();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "เธฅเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเนเธกเนเธชเธณเน€เธฃเนเธ");
+      setError(deleteError instanceof Error ? deleteError.message : "ลบ master รายการการเงินไม่สำเร็จ");
     } finally {
       setIsSaving(false);
     }
@@ -835,114 +835,114 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">เน€เธกเธเธนเธเธฒเธฃเน€เธเธดเธ</CardTitle>
+          <CardTitle className="text-xl">เมนูการเงิน</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button asChild>
             <Link href="/finance/income/create">
               <ExternalLink className="mr-2 h-4 w-4" />
-              เธเธฑเธเธ—เธถเธเธฃเธฒเธขเธฃเธฑเธ
+              บันทึกรายรับ
             </Link>
           </Button>
           <Button asChild variant="secondary">
             <Link href="/finance/expense/create">
               <ExternalLink className="mr-2 h-4 w-4" />
-              เธเธฑเธเธ—เธถเธเธฃเธฒเธขเธเนเธฒเธข
+              บันทึกรายจ่าย
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/finance/list">
               <ExternalLink className="mr-2 h-4 w-4" />
-              เธฃเธฒเธขเธเธฒเธฃเธเนเธญเธกเธนเธฅ
+              รายการข้อมูล
             </Link>
           </Button>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="เธเธฑเธเธ—เธถเธเธเธฒเธฃเน€เธเธดเธเธ—เธตเนเนเธชเธ”เธ" value={String(records.length)} />
-        <SummaryCard label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเธ—เธตเนเธกเธตเธเนเธญเธกเธนเธฅ" value={String(unitsWithFinanceRecords)} />
-        <SummaryCard label="เธฃเธฒเธขเธฃเธฑเธเธฃเธงเธก" value={formatAmount(records.reduce((sum, record) => sum + record.income, 0))} />
-        <SummaryCard label="เธฃเธฒเธขเธเนเธฒเธขเธฃเธงเธก" value={formatAmount(records.reduce((sum, record) => sum + record.expense, 0))} />
+        <SummaryCard label="บันทึกการเงินที่แสดง" value={String(records.length)} />
+        <SummaryCard label="หน่วยบริการที่มีข้อมูล" value={String(unitsWithFinanceRecords)} />
+        <SummaryCard label="รายรับรวม" value={formatAmount(records.reduce((sum, record) => sum + record.income, 0))} />
+        <SummaryCard label="รายจ่ายรวม" value={formatAmount(records.reduce((sum, record) => sum + record.expense, 0))} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃเธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เนเนเธฅเธฐเธฃเธฒเธขเธเนเธฒเธข</CardTitle>
-              <CardDescription>เธชเธฃเนเธฒเธ เนเธเนเนเธ เนเธฅเธฐเธฅเธ master เธเธญเธเธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเนเธเนเนเธเธเธญเธฃเนเธกเธเธฒเธฃเน€เธเธดเธ</CardDescription>
+              <CardTitle className="text-xl">จัดการรายการรายได้และรายจ่าย</CardTitle>
+              <CardDescription>สร้าง แก้ไข และลบ master ของชื่อรายการที่ใช้ในฟอร์มการเงิน</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <form className="space-y-4" onSubmit={handleCreateAccount}>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="เธเธฃเธฐเน€เธ เธ—">
+                  <Field label="ประเภท">
                     <select
                       value={accountForm.type}
                       onChange={(event) => setAccountForm((current) => ({ ...current, type: event.target.value as "income" | "expense" }))}
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="income">เธฃเธฒเธขเนเธ”เน</option>
-                      <option value="expense">เธฃเธฒเธขเธเนเธฒเธข</option>
+                      <option value="income">รายได้</option>
+                      <option value="expense">รายจ่าย</option>
                     </select>
                   </Field>
-                  <Field label="เธฃเธซเธฑเธชเธเธฑเธเธเธต">
-                    <Input value={accountForm.accountCode} onChange={(event) => setAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เน€เธเนเธ 4404040101.001" />
+                  <Field label="รหัสบัญชี">
+                    <Input value={accountForm.accountCode} onChange={(event) => setAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เช่น 4404040101.001" />
                   </Field>
                 </div>
-                <Field label="เธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃ">
+                <Field label="ชื่อรายการ">
                   <Input value={accountForm.nameTh} onChange={(event) => setAccountForm((current) => ({ ...current, nameTh: event.target.value }))} />
                 </Field>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="เธฅเธณเธ”เธฑเธ">
+                  <Field label="ลำดับ">
                     <Input value={accountForm.displayOrder} onChange={(event) => setAccountForm((current) => ({ ...current, displayOrder: event.target.value }))} />
                   </Field>
-                  <Field label="เธชเธ–เธฒเธเธฐ">
+                  <Field label="สถานะ">
                     <select
                       value={accountForm.isActive ? "active" : "inactive"}
                       onChange={(event) => setAccountForm((current) => ({ ...current, isActive: event.target.value === "active" }))}
                       className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="active">เนเธเนเธเธฒเธ</option>
-                      <option value="inactive">เธเธดเธ”เนเธเนเธเธฒเธ</option>
+                      <option value="active">ใช้งาน</option>
+                      <option value="inactive">ปิดใช้งาน</option>
                     </select>
                   </Field>
                 </div>
                 <Button type="submit" className="w-full" disabled={isSaving || !accountForm.nameTh.trim()}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เน€เธเธดเนเธกเธฃเธฒเธขเธเธฒเธฃ master"}
+                  {isSaving ? "กำลังบันทึก..." : "เพิ่มรายการ master"}
                 </Button>
               </form>
 
               <div className="rounded-xl border">
-                <div className="border-b px-4 py-3 text-sm font-medium">เธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเธกเธตเธญเธขเธนเน</div>
+                <div className="border-b px-4 py-3 text-sm font-medium">รายการที่มีอยู่</div>
                 <div className="max-h-96 overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-background">
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="px-4 py-2 font-medium">เธเธฃเธฐเน€เธ เธ—</th>
-                        <th className="px-4 py-2 font-medium">เธฃเธซเธฑเธชเธเธฑเธเธเธต</th>
-                        <th className="px-4 py-2 font-medium">เธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃ</th>
-                        <th className="px-4 py-2 font-medium">เธชเธ–เธฒเธเธฐ</th>
-                        <th className="px-4 py-2 text-right font-medium">เธเธฑเธ”เธเธฒเธฃ</th>
+                        <th className="px-4 py-2 font-medium">ประเภท</th>
+                        <th className="px-4 py-2 font-medium">รหัสบัญชี</th>
+                        <th className="px-4 py-2 font-medium">ชื่อรายการ</th>
+                        <th className="px-4 py-2 font-medium">สถานะ</th>
+                        <th className="px-4 py-2 text-right font-medium">จัดการ</th>
                       </tr>
                     </thead>
                     <tbody>
                       {accounts.map((account) => (
                         <tr key={account.id} className="border-b last:border-b-0">
-                          <td className="px-4 py-3">{account.type === "income" ? "เธฃเธฒเธขเนเธ”เน" : "เธฃเธฒเธขเธเนเธฒเธข"}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{account.accountCode ?? "โ€”"}</td>
+                          <td className="px-4 py-3">{account.type === "income" ? "รายได้" : "รายจ่าย"}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{account.accountCode ?? "—"}</td>
                           <td className="px-4 py-3">{account.nameTh}</td>
-                          <td className="px-4 py-3">{account.isActive ? "เนเธเนเธเธฒเธ" : "เธเธดเธ”เนเธเนเธเธฒเธ"}</td>
+                          <td className="px-4 py-3">{account.isActive ? "ใช้งาน" : "ปิดใช้งาน"}</td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-2">
                               <Button type="button" variant="outline" size="sm" onClick={() => openEditAccountDialog(account)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                เนเธเนเนเธ
+                                แก้ไข
                               </Button>
                               <Button type="button" variant="outline" size="sm" onClick={() => void handleDeleteAccount(account)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                เธฅเธ
+                                ลบ
                               </Button>
                             </div>
                           </td>
@@ -956,11 +956,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">เธเธณเน€เธเนเธฒเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธ</CardTitle>
-              <CardDescription>เธญเนเธฒเธเธฃเธซเธฑเธช `pcucode` เนเธ”เธข 5 เธซเธฅเธฑเธเนเธฃเธเน€เธเนเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เนเธฅเธฐ 2 เธซเธฅเธฑเธเธ—เนเธฒเธขเน€เธเนเธเน€เธ”เธทเธญเธ</CardDescription>
+              <CardTitle className="text-xl">นำเข้าข้อมูลการเงิน</CardTitle>
+              <CardDescription>อ่านรหัส `pcucode` โดย 5 หลักแรกเป็นหน่วยบริการ และ 2 หลักท้ายเป็นเดือน</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Field label="เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“">
+              <Field label="ปีงบประมาณ">
                 <select
                   value={selectedYear}
                   onChange={(event) => setSelectedYear(event.target.value)}
@@ -973,10 +973,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                   ))}
                 </select>
               </Field>
-              <Field label="เธเธนเนเธเธฑเธเธ—เธถเธ">
+              <Field label="ผู้บันทึก">
                 <Input value={form.recorder} onChange={(event) => setForm((current) => ({ ...current, recorder: event.target.value }))} placeholder="settings-import" />
               </Field>
-              <Field label="เนเธเธฅเน Excel">
+              <Field label="ไฟล์ Excel">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -986,7 +986,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                   onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
                 />
               </Field>
-              <Field label="เนเธเธฅเน€เธ”เธญเธฃเนเน€เธญเธเธชเธฒเธฃเธฃเธฒเธขเน€เธ”เธทเธญเธ">
+              <Field label="โฟลเดอร์เอกสารรายเดือน">
                 <input
                   ref={folderInputRef}
                   type="file"
@@ -997,8 +997,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </Field>
               {selectedFiles.length > 0 ? (
                 <div className="rounded-xl border bg-muted/20 p-4 text-sm">
-                  <p>เน€เธฅเธทเธญเธเนเธฅเนเธง {selectedFiles.length} เนเธเธฅเน</p>
-                  <p className="text-muted-foreground">เธ•เธฑเธงเธญเธขเนเธฒเธ: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
+                  <p>เลือกแล้ว {selectedFiles.length} ไฟล์</p>
+                  <p className="text-muted-foreground">ตัวอย่าง: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
                 </div>
               ) : null}
               <Button
@@ -1021,7 +1021,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </Button>
               <Button type="button" className="w-full" onClick={() => void handleImport()} disabled={importing || !selectedYear}>
                 <Upload className="mr-2 h-4 w-4" />
-                {importing ? "เธเธณเธฅเธฑเธเธเธณเน€เธเนเธฒ..." : "เธเธณเน€เธเนเธฒเธเนเธญเธกเธนเธฅ"}
+                {importing ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
               </Button>
               {importPreview ? (
                 <div className="rounded-xl border bg-muted/20 p-4 text-sm">
@@ -1096,12 +1096,12 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               ) : null}
               {lastImport ? (
                 <div className="rounded-xl border bg-muted/20 p-4 text-sm">
-                  <p>เธเธฃเธฐเธกเธงเธฅเธเธฅ {lastImport.processedFiles} เนเธเธฅเน</p>
-                  <p>เน€เธเธดเนเธกเนเธซเธกเน {lastImport.imported} เธฃเธฒเธขเธเธฒเธฃ</p>
-                  <p>เธเธฃเธฑเธเธเธฃเธธเธ {lastImport.updated} เธฃเธฒเธขเธเธฒเธฃ</p>
-                  <p>เธเนเธฒเธก {lastImport.skipped} เธฃเธฒเธขเธเธฒเธฃ</p>
+                  <p>ประมวลผล {lastImport.processedFiles} ไฟล์</p>
+                  <p>เพิ่มใหม่ {lastImport.imported} รายการ</p>
+                  <p>ปรับปรุง {lastImport.updated} รายการ</p>
+                  <p>ข้าม {lastImport.skipped} รายการ</p>
                   {lastImport.detectedUnits.length > 0 ? (
-                    <p className="text-muted-foreground">เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเธ—เธตเนเธ•เธฃเธงเธเธเธ: {lastImport.detectedUnits.join(", ")}</p>
+                    <p className="text-muted-foreground">หน่วยบริการที่ตรวจพบ: {lastImport.detectedUnits.join(", ")}</p>
                   ) : null}
                   {lastImport.issues.length > 0 ? (
                     <div className="mt-3 space-y-2">
@@ -1222,17 +1222,17 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">เน€เธเธดเนเธกเธเธฑเธเธ—เธถเธเธเธฒเธฃเน€เธเธดเธเธฃเธฒเธขเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ</CardTitle>
+              <CardTitle className="text-xl">เพิ่มบันทึกการเงินรายหน่วยบริการ</CardTitle>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleCreate}>
-                <Field label="เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“">
+                <Field label="ปีงบประมาณ">
                   <select
                     value={selectedYear}
                     onChange={(event) => setSelectedYear(event.target.value)}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">เน€เธฅเธทเธญเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“</option>
+                    <option value="">เลือกปีงบประมาณ</option>
                     {years.map((year) => (
                       <option key={year} value={year}>
                         {year}
@@ -1240,13 +1240,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                     ))}
                   </select>
                 </Field>
-                <Field label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ">
+                <Field label="หน่วยบริการ">
                   <select
                     value={form.healthUnitId}
                     onChange={(event) => setForm((current) => ({ ...current, healthUnitId: event.target.value }))}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">เน€เธฅเธทเธญเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ</option>
+                    <option value="">เลือกหน่วยบริการ</option>
                     {units.map((unit) => (
                       <option key={unit.id} value={unit.id}>
                         {unit.code} - {unit.name}
@@ -1254,27 +1254,27 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                     ))}
                   </select>
                 </Field>
-                <Field label="เธเธงเธ”เน€เธ”เธทเธญเธ">
+                <Field label="งวดเดือน">
                   <select
                     value={form.fiscalPeriodId}
                     onChange={(event) => setForm((current) => ({ ...current, fiscalPeriodId: event.target.value }))}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">เน€เธฅเธทเธญเธเธเธงเธ”เน€เธ”เธทเธญเธ</option>
+                    <option value="">เลือกงวดเดือน</option>
                     {periodsForSelectedYear.map((period) => (
                       <option key={period.id} value={period.id}>
-                        {period.monthNameTh} / เนเธ•เธฃเธกเธฒเธช {period.quarter} / {period.fiscalYear}
+                        {period.monthNameTh} / ไตรมาส {period.quarter} / {period.fiscalYear}
                       </option>
                     ))}
                   </select>
                   {!periodsForSelectedYear.length ? (
-                    <p className="text-xs text-muted-foreground">เธขเธฑเธเนเธกเนเธกเธตเธเธงเธ”เน€เธ”เธทเธญเธเนเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“เธ—เธตเนเน€เธฅเธทเธญเธ</p>
+                    <p className="text-xs text-muted-foreground">ยังไม่มีงวดเดือนในปีงบประมาณที่เลือก</p>
                   ) : null}
                 </Field>
 
                 <BreakdownEditor
-                  title="เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เน"
-                  description="เน€เธฅเธทเธญเธเธเธทเนเธญเธฃเธฒเธขเนเธ”เนเธเธฒเธเธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเธกเธตเธญเธขเธนเน เธซเธฃเธทเธญเธเธดเธกเธเนเธเธทเนเธญเนเธซเธกเนเนเธ”เน"
+                  title="รายการรายได้"
+                  description="เลือกชื่อรายได้จากรายการที่มีอยู่ หรือพิมพ์ชื่อใหม่ได้"
                   lines={form.incomeLines}
                   options={incomeOptions}
                   total={createIncomeTotal}
@@ -1285,8 +1285,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 />
 
                 <BreakdownEditor
-                  title="เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเธเนเธฒเธข"
-                  description="เน€เธฅเธทเธญเธเธเธทเนเธญเธฃเธฒเธขเธเนเธฒเธขเธเธฒเธเธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเธกเธตเธญเธขเธนเน เธซเธฃเธทเธญเธเธดเธกเธเนเธเธทเนเธญเนเธซเธกเนเนเธ”เน"
+                  title="รายการรายจ่าย"
+                  description="เลือกชื่อรายจ่ายจากรายการที่มีอยู่ หรือพิมพ์ชื่อใหม่ได้"
                   lines={form.expenseLines}
                   options={expenseOptions}
                   total={createExpenseTotal}
@@ -1296,10 +1296,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                   onRemove={(id) => removeLine("expenseLines", id)}
                 />
 
-                <Field label="เธเธนเนเธเธฑเธเธ—เธถเธ">
+                <Field label="ผู้บันทึก">
                   <Input value={form.recorder} onChange={(event) => setForm((current) => ({ ...current, recorder: event.target.value }))} />
                 </Field>
-                <Field label="เธซเธกเธฒเธขเน€เธซเธ•เธธ">
+                <Field label="หมายเหตุ">
                   <textarea
                     value={form.notes}
                     onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
@@ -1309,7 +1309,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 </Field>
                 <Button type="submit" className="w-full" disabled={isSaving || !form.healthUnitId || !form.fiscalPeriodId}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธฒเธฃเน€เธเธดเธเธฃเธฒเธขเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ"}
+                  {isSaving ? "กำลังบันทึก..." : "บันทึกการเงินรายหน่วยบริการ"}
                 </Button>
               </form>
             </CardContent>
@@ -1319,11 +1319,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         <Card>
           <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle className="text-xl">เธเธฑเธ”เธเธฒเธฃเธเธฒเธฃเน€เธเธดเธเธฃเธฒเธขเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ</CardTitle>
-              <CardDescription>เธเนเธเธซเธฒ เนเธเนเนเธ เนเธฅเธฐเธฅเธเธเธฑเธเธ—เธถเธเธฃเธฒเธขเธฃเธฑเธเธฃเธฒเธขเธเนเธฒเธขเธเธญเธเนเธ•เนเธฅเธฐเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ</CardDescription>
+              <CardTitle className="text-xl">จัดการการเงินรายหน่วยบริการ</CardTitle>
+              <CardDescription>ค้นหา แก้ไข และลบบันทึกรายรับรายจ่ายของแต่ละหน่วยบริการ</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="เธเนเธเธซเธฒเธฃเธซเธฑเธช เธเธทเนเธญเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เธซเธฃเธทเธญเน€เธ”เธทเธญเธ" className="w-full md:w-72" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหารหัส ชื่อหน่วยบริการ หรือเดือน" className="w-full md:w-72" />
               <Button variant="outline" size="icon" onClick={() => void loadRecords()} disabled={isLoading}>
                 <RefreshCcw className="h-4 w-4" />
               </Button>
@@ -1334,13 +1334,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               <table className="w-full min-w-[980px] text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ</th>
-                    <th className="pb-3 font-medium">เธเธงเธ”</th>
-                    <th className="pb-3 font-medium text-right">เธฃเธฒเธขเธฃเธฑเธ</th>
-                    <th className="pb-3 font-medium text-right">เธฃเธฒเธขเธเนเธฒเธข</th>
-                    <th className="pb-3 font-medium text-right">เธเธเน€เธซเธฅเธทเธญ</th>
-                    <th className="pb-3 font-medium">เธเธนเนเธเธฑเธเธ—เธถเธ</th>
-                    <th className="pb-3 font-medium text-right">เธเธฑเธ”เธเธฒเธฃ</th>
+                    <th className="pb-3 font-medium">หน่วยบริการ</th>
+                    <th className="pb-3 font-medium">งวด</th>
+                    <th className="pb-3 font-medium text-right">รายรับ</th>
+                    <th className="pb-3 font-medium text-right">รายจ่าย</th>
+                    <th className="pb-3 font-medium text-right">คงเหลือ</th>
+                    <th className="pb-3 font-medium">ผู้บันทึก</th>
+                    <th className="pb-3 font-medium text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1361,11 +1361,11 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEditDialog(record)}>
                             <Pencil className="mr-2 h-4 w-4" />
-                            เนเธเนเนเธ
+                            แก้ไข
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => void handleDelete(record)}>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            เธฅเธ
+                            ลบ
                           </Button>
                         </div>
                       </td>
@@ -1375,7 +1375,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </table>
             </div>
             {!isLoading && filteredRecords.length === 0 ? (
-              <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">เนเธกเนเธเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธเธ•เธฒเธกเน€เธเธทเนเธญเธเนเธเธ—เธตเนเธเนเธเธซเธฒ</div>
+              <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">ไม่พบข้อมูลการเงินตามเงื่อนไขที่ค้นหา</div>
             ) : null}
           </CardContent>
         </Card>
@@ -1384,20 +1384,20 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       <Dialog open={Boolean(editingRecord)} onOpenChange={(open) => (!open ? setEditingRecord(null) : null)}>
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธฒเธฃเน€เธเธดเธ</DialogTitle>
-            <DialogDescription>เธเธฃเธฑเธเธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เน เธฃเธฒเธขเธเนเธฒเธข เธเธนเนเธเธฑเธเธ—เธถเธ เนเธฅเธฐเธซเธกเธฒเธขเน€เธซเธ•เธธเธเธญเธเธฃเธฒเธขเธเธฒเธฃเธ—เธตเนเธกเธตเธญเธขเธนเน</DialogDescription>
+            <DialogTitle>แก้ไขข้อมูลการเงิน</DialogTitle>
+            <DialogDescription>ปรับรายการรายได้ รายจ่าย ผู้บันทึก และหมายเหตุของรายการที่มีอยู่</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdate}>
-            <Field label="เธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ">
+            <Field label="หน่วยบริการ">
               <Input value={editingRecord ? `${editingRecord.unitCode} - ${editingRecord.unitName}` : ""} disabled />
             </Field>
-            <Field label="เธเธงเธ”เน€เธ”เธทเธญเธ">
+            <Field label="งวดเดือน">
               <Input value={editingRecord ? `${editingRecord.monthNameTh} ${editingRecord.fiscalYear}` : ""} disabled />
             </Field>
 
             <BreakdownEditor
-              title="เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เน"
-              description="เนเธเนเนเธเธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเนเธ”เนเธเธญเธเธเธงเธ”เธเธตเน"
+              title="รายการรายได้"
+              description="แก้ไขรายการรายได้ของงวดนี้"
               lines={editForm.incomeLines}
               options={incomeOptions}
               total={editIncomeTotal}
@@ -1408,8 +1408,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
             />
 
             <BreakdownEditor
-              title="เธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเธเนเธฒเธข"
-              description="เนเธเนเนเธเธฃเธฒเธขเธเธฒเธฃเธฃเธฒเธขเธเนเธฒเธขเธเธญเธเธเธงเธ”เธเธตเน"
+              title="รายการรายจ่าย"
+              description="แก้ไขรายการรายจ่ายของงวดนี้"
               lines={editForm.expenseLines}
               options={expenseOptions}
               total={editExpenseTotal}
@@ -1419,10 +1419,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               onRemove={(id) => removeEditLine("expenseLines", id)}
             />
 
-            <Field label="เธเธนเนเธเธฑเธเธ—เธถเธ">
+            <Field label="ผู้บันทึก">
               <Input value={editForm.recorder} onChange={(event) => setEditForm((current) => ({ ...current, recorder: event.target.value }))} />
             </Field>
-            <Field label="เธซเธกเธฒเธขเน€เธซเธ•เธธ">
+            <Field label="หมายเหตุ">
               <textarea
                 value={editForm.notes}
                 onChange={(event) => setEditForm((current) => ({ ...current, notes: event.target.value }))}
@@ -1433,13 +1433,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
             {editingRecord ? (
               <div className="rounded-xl border bg-muted/20 p-4">
-                <p className="mb-3 text-sm font-medium">เธฃเธฒเธขเธเธทเนเธญเธฃเธฒเธขเนเธ”เนเน€เธ”เธดเธกเธ—เธตเนเธกเธตเธญเธขเธนเนเนเธเธฃเธฒเธขเธเธฒเธฃเธเธตเน</p>
+                <p className="mb-3 text-sm font-medium">รายชื่อรายได้เดิมที่มีอยู่ในรายการนี้</p>
                 <div className="max-h-56 overflow-y-auto rounded-lg border bg-background">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-background">
                       <tr className="border-b text-left text-muted-foreground">
                         <th className="px-3 py-2 font-medium">Accountname</th>
-                        <th className="px-3 py-2 text-right font-medium">เธขเธญเธ”</th>
+                        <th className="px-3 py-2 text-right font-medium">ยอด</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1457,10 +1457,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
             <DialogFooter className="border-t bg-background pt-4">
               <Button type="button" variant="outline" onClick={() => setEditingRecord(null)}>
-                เธขเธเน€เธฅเธดเธ
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
               </Button>
             </DialogFooter>
           </form>
@@ -1470,47 +1470,47 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       <Dialog open={Boolean(editingAccount)} onOpenChange={(open) => (!open ? setEditingAccount(null) : null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>เนเธเนเนเธ master เธฃเธฒเธขเธเธฒเธฃเธเธฒเธฃเน€เธเธดเธ</DialogTitle>
-            <DialogDescription>เธเธฃเธฑเธเธเธฃเธฐเน€เธ เธ— เธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃ เธฅเธณเธ”เธฑเธ เนเธฅเธฐเธชเธ–เธฒเธเธฐเธเธฒเธฃเนเธเนเธเธฒเธ</DialogDescription>
+            <DialogTitle>แก้ไข master รายการการเงิน</DialogTitle>
+            <DialogDescription>ปรับประเภท ชื่อรายการ ลำดับ และสถานะการใช้งาน</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleUpdateAccount}>
-            <Field label="เธเธฃเธฐเน€เธ เธ—">
+            <Field label="ประเภท">
               <select
                 value={editAccountForm.type}
                 onChange={(event) => setEditAccountForm((current) => ({ ...current, type: event.target.value as "income" | "expense" }))}
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               >
-                <option value="income">เธฃเธฒเธขเนเธ”เน</option>
-                <option value="expense">เธฃเธฒเธขเธเนเธฒเธข</option>
+                <option value="income">รายได้</option>
+                <option value="expense">รายจ่าย</option>
               </select>
             </Field>
-            <Field label="เธฃเธซเธฑเธชเธเธฑเธเธเธต">
-              <Input value={editAccountForm.accountCode} onChange={(event) => setEditAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เน€เธเนเธ 4404040101.001" />
+            <Field label="รหัสบัญชี">
+              <Input value={editAccountForm.accountCode} onChange={(event) => setEditAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เช่น 4404040101.001" />
             </Field>
-            <Field label="เธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃ">
+            <Field label="ชื่อรายการ">
               <Input value={editAccountForm.nameTh} onChange={(event) => setEditAccountForm((current) => ({ ...current, nameTh: event.target.value }))} />
             </Field>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="เธฅเธณเธ”เธฑเธ">
+              <Field label="ลำดับ">
                 <Input value={editAccountForm.displayOrder} onChange={(event) => setEditAccountForm((current) => ({ ...current, displayOrder: event.target.value }))} />
               </Field>
-              <Field label="เธชเธ–เธฒเธเธฐ">
+              <Field label="สถานะ">
                 <select
                   value={editAccountForm.isActive ? "active" : "inactive"}
                   onChange={(event) => setEditAccountForm((current) => ({ ...current, isActive: event.target.value === "active" }))}
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="active">เนเธเนเธเธฒเธ</option>
-                  <option value="inactive">เธเธดเธ”เนเธเนเธเธฒเธ</option>
+                  <option value="active">ใช้งาน</option>
+                  <option value="inactive">ปิดใช้งาน</option>
                 </select>
               </Field>
             </div>
             <DialogFooter className="border-t bg-background pt-4">
               <Button type="button" variant="outline" onClick={() => setEditingAccount(null)}>
-                เธขเธเน€เธฅเธดเธ
+                ยกเลิก
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธ..." : "เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
               </Button>
             </DialogFooter>
           </form>
@@ -1549,7 +1549,7 @@ function BreakdownEditor({
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-muted-foreground">เธขเธญเธ”เธฃเธงเธก</p>
+          <p className="text-xs text-muted-foreground">ยอดรวม</p>
           <p className="text-sm font-semibold">{formatAmount(total)}</p>
         </div>
       </div>
@@ -1562,7 +1562,7 @@ function BreakdownEditor({
                 list={listId}
                 value={line.name}
                 onChange={(event) => onChange(line.id, "name", event.target.value)}
-                placeholder={options.length > 0 ? options[0] : "เธเธทเนเธญเธฃเธฒเธขเธเธฒเธฃ"}
+                placeholder={options.length > 0 ? options[0] : "ชื่อรายการ"}
               />
             </div>
             <div>
@@ -1577,7 +1577,7 @@ function BreakdownEditor({
             </div>
             <Button type="button" variant="outline" onClick={() => onRemove(line.id)}>
               <Trash2 className="mr-2 h-4 w-4" />
-              เธฅเธ
+              ลบ
             </Button>
           </div>
         ))}
@@ -1585,7 +1585,7 @@ function BreakdownEditor({
 
       <Button type="button" variant="outline" className="mt-3 w-full" onClick={onAdd}>
         <Plus className="mr-2 h-4 w-4" />
-        เน€เธเธดเนเธกเธฃเธฒเธขเธเธฒเธฃ
+        เพิ่มรายการ
       </Button>
     </div>
   );

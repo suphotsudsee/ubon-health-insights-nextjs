@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "check:text": "node scripts/check-text-encoding.js",
     "dev": "next dev --hostname 0.0.0.0 --webpack",
-    "build": "next build",
+    "build": "npm run check:text && next build",
     "start": "node -r dotenv/config scripts/start-standalone.js",
     "lint": "next lint",
     "db:generate": "prisma generate",

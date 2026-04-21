@@ -41,7 +41,7 @@ export default function LoginPage() {
     setIsSubmitting(false);
 
     if (!result || result.error) {
-      setError("เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธกเนเธชเธณเน€เธฃเนเธ เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธญเธตเน€เธกเธฅเนเธฅเธฐเธฃเธซเธฑเธชเธเนเธฒเธ");
+      setError("เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน");
       return;
     }
 
@@ -54,28 +54,28 @@ export default function LoginPage() {
       <section className="space-y-5">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-primary">
           <ShieldCheck className="h-4 w-4" />
-          เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃเธเนเธญเธกเธนเธฅเธชเธธเธเธ เธฒเธ เธญเธเธ.เธญเธธเธเธฅเธฃเธฒเธเธเธฒเธเธต
+          ระบบจัดการข้อมูลสุขภาพ อบจ.อุบลราชธานี
         </div>
         <div className="space-y-3">
           <h1 className="text-4xl font-bold tracking-tight text-primary">
-            เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเน€เธเธทเนเธญเธเธฑเธ”เธเธฒเธฃเธเธนเนเนเธเนเนเธฅเธฐเธเนเธญเธกเธนเธฅเธฃเธฐเธเธ
+            เข้าสู่ระบบเพื่อจัดการผู้ใช้และข้อมูลระบบ
           </h1>
           <p className="max-w-xl text-base text-muted-foreground">
-            เนเธเนเธชเธณเธซเธฃเธฑเธเน€เธเนเธฒเธชเธนเนเธซเธเนเธฒเธ•เธฑเนเธเธเนเธฒ เธเธฑเธ”เธเธฒเธฃเธเธฑเธเธเธตเธเธนเนเนเธเน เธ•เธฃเธงเธเธชเธญเธเธฃเธญเธเธเธตเธเธเธเธฃเธฐเธกเธฒเธ“
-            เนเธฅเธฐเธ”เธนเธ เธฒเธเธฃเธงเธกเธเนเธญเธกเธนเธฅเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃเนเธเธฃเธฐเธเธ
+            ใช้สำหรับเข้าสู่หน้าตั้งค่า จัดการบัญชีผู้ใช้ ตรวจสอบรอบปีงบประมาณ
+            และดูภาพรวมข้อมูลหน่วยบริการในระบบ
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <p className="text-sm font-medium text-foreground">เธเธฑเธ”เธเธฒเธฃเธเธนเนเนเธเน</p>
+            <p className="text-sm font-medium text-foreground">จัดการผู้ใช้</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              เน€เธเธดเนเธก เนเธเนเนเธ เน€เธเธดเธ”เธเธดเธ”เธเธฒเธฃเนเธเนเธเธฒเธ เนเธฅเธฐเธฅเธเธเธฑเธเธเธตเธเธนเนเนเธเนเนเธ”เนเธเธฒเธเธซเธเนเธฒ Settings
+              เพิ่ม แก้ไข เปิดปิดการใช้งาน และลบบัญชีผู้ใช้ได้จากหน้า Settings
             </p>
           </div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <p className="text-sm font-medium text-foreground">เธ•เธฃเธงเธเธชเธญเธเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธ</p>
+            <p className="text-sm font-medium text-foreground">ตรวจสอบข้อมูลหลัก</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              เธ”เธนเธเธณเธเธงเธเธซเธเนเธงเธขเธเธฃเธดเธเธฒเธฃ เธเธตเธเธเธเธฃเธฐเธกเธฒเธ“ เนเธฅเธฐเธเนเธญเธกเธนเธฅเธชเธ–เธฒเธเธฐเธฃเธฐเธเธเนเธ”เนเนเธเธเธธเธ”เน€เธ”เธตเธขเธง
+              ดูจำนวนหน่วยบริการ ปีงบประมาณ และข้อมูลสถานะระบบได้ในจุดเดียว
             </p>
           </div>
         </div>
@@ -83,15 +83,15 @@ export default function LoginPage() {
 
       <Card className="border-primary/10 shadow-lg">
         <CardHeader>
-          <CardTitle>เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ</CardTitle>
+          <CardTitle>เข้าสู่ระบบ</CardTitle>
           <CardDescription>
-            เธเธฃเธญเธเธเธฑเธเธเธตเธเธนเนเนเธเนเน€เธเธทเนเธญเน€เธเนเธฒเน€เธกเธเธนเธ•เธฑเนเธเธเนเธฒเนเธฅเธฐเธเธฑเธ”เธเธฒเธฃเธเนเธญเธกเธนเธฅ
+            กรอกบัญชีผู้ใช้เพื่อเข้าเมนูตั้งค่าและจัดการข้อมูล
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">เธญเธตเน€เธกเธฅ</label>
+              <label className="text-sm font-medium text-foreground">อีเมล</label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -106,14 +106,14 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">เธฃเธซเธฑเธชเธเนเธฒเธ</label>
+              <label className="text-sm font-medium text-foreground">รหัสผ่าน</label>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="เธญเธขเนเธฒเธเธเนเธญเธข 8 เธ•เธฑเธงเธญเธฑเธเธฉเธฃ"
+                  placeholder="อย่างน้อย 8 ตัวอักษร"
                   className="pl-9"
                   required
                 />
@@ -127,13 +127,13 @@ export default function LoginPage() {
             ) : null}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "เธเธณเธฅเธฑเธเธ•เธฃเธงเธเธชเธญเธ..." : "เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ"}
+              {isSubmitting ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบ"}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              เน€เธกเธทเนเธญเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธฅเนเธงเนเธเธ—เธตเน{" "}
+              เมื่อเข้าสู่ระบบแล้วไปที่{" "}
               <Link href="/settings" className="font-medium text-primary hover:underline">
-                เธซเธเนเธฒ Settings
+                หน้า Settings
               </Link>
             </p>
           </form>
