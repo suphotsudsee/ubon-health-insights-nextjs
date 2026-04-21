@@ -173,6 +173,14 @@ function normalizeUnitName(value: string) {
 }
 
 function parseMonthFromText(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.includes("วันที่พิมพ์")) {
+    return null;
+  }
+
   const slashMatch = value.match(/(\d{1,2})\/(\d{1,2})\/(25\d{2}|20\d{2})/);
   if (slashMatch) {
     return Number(slashMatch[2]);
@@ -210,6 +218,20 @@ function findDocumentSourceCode(rows: unknown[][], fallback: string) {
 }
 
 function findDocumentMonth(rows: unknown[][]) {
+  for (const row of rows) {
+    for (const cell of row) {
+      const value = trimCell(cell);
+      if (!value.includes("ณ วันที่")) {
+        continue;
+      }
+
+      const month = parseMonthFromText(value);
+      if (month) {
+        return month;
+      }
+    }
+  }
+
   for (const row of rows) {
     for (const cell of row) {
       const month = parseMonthFromText(trimCell(cell));
