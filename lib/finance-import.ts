@@ -519,9 +519,18 @@ export function parseTrialBalanceWorkbook(buffer: Buffer, fileName: string) {
     }
   }
 
+  const hasTrialBalanceTotals =
+    openingDebit > 0 ||
+    openingCredit > 0 ||
+    movementDebit > 0 ||
+    movementCredit > 0 ||
+    closingDebit > 0 ||
+    closingCredit > 0 ||
+    trialBalanceRows.length > 0;
+
   return {
     record:
-      unitName && normalizedUnitName && month && (income !== 0 || expense !== 0)
+      unitName && normalizedUnitName && month && hasTrialBalanceTotals
         ? {
             sourceCode,
             unitName,
@@ -548,8 +557,8 @@ export function parseTrialBalanceWorkbook(buffer: Buffer, fileName: string) {
       ...(!month
         ? [{ sourceCode, unitCode: "", month: null, reason: `Cannot detect month in file ${fileName}` }]
         : []),
-      ...((income === 0 && expense === 0)
-        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect income or expense amount in file ${fileName}` }]
+      ...(!hasTrialBalanceTotals
+        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect trial balance totals in file ${fileName}` }]
         : []),
     ] satisfies FinanceImportIssue[],
   };
