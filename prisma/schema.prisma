@@ -280,6 +280,13 @@ model FinanceRecord {
   balance          Decimal  @default(0) @db.Decimal(15, 2)
   incomeBreakdown  Json?    @map("income_breakdown")
   expenseBreakdown Json?    @map("expense_breakdown")
+  openingDebit     Decimal  @default(0) @map("opening_debit") @db.Decimal(15, 2)
+  openingCredit    Decimal  @default(0) @map("opening_credit") @db.Decimal(15, 2)
+  movementDebit    Decimal  @default(0) @map("movement_debit") @db.Decimal(15, 2)
+  movementCredit   Decimal  @default(0) @map("movement_credit") @db.Decimal(15, 2)
+  closingDebit     Decimal  @default(0) @map("closing_debit") @db.Decimal(15, 2)
+  closingCredit    Decimal  @default(0) @map("closing_credit") @db.Decimal(15, 2)
+  trialBalanceRows Json?    @map("trial_balance_rows")
   notes            String?  @db.Text
   recorder         String?  @db.VarChar(100)
   submittedBy      Int?     @map("submitted_by") @db.UnsignedMediumInt

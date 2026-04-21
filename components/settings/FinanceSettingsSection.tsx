@@ -2,18 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, Pencil, Plus, RefreshCcw, Trash2, Upload } from "lucide-react";
+import { ExternalLink, RefreshCcw, Trash2, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 type HealthUnitOption = {
   id: number;
@@ -39,28 +31,14 @@ type FinanceRecordItem = {
   fiscalYear: number;
   month: number;
   monthNameTh: string;
-  income: number;
-  expense: number;
-  balance: number;
-  incomeBreakdown: Record<string, number> | null;
-  expenseBreakdown: Record<string, number> | null;
-  notes: string | null;
+  openingDebit: number;
+  openingCredit: number;
+  movementDebit: number;
+  movementCredit: number;
+  closingDebit: number;
+  closingCredit: number;
   recorder: string | null;
-};
-
-type BreakdownLine = {
-  id: string;
-  name: string;
-  amount: string;
-};
-
-type FinanceRecordFormState = {
-  healthUnitId: string;
-  fiscalPeriodId: string;
-  notes: string;
-  recorder: string;
-  incomeLines: BreakdownLine[];
-  expenseLines: BreakdownLine[];
+  createdAt?: string;
 };
 
 type ImportResponse = {
@@ -105,41 +83,12 @@ type ImportPreviewResponse = {
   }>;
 };
 
-type FinanceAccountItem = {
-  id: number;
-  type: "income" | "expense";
-  accountCode: string | null;
-  nameTh: string;
-  displayOrder: number;
-  isActive: boolean;
+type Props = {
+  units: HealthUnitOption[];
+  fiscalPeriods: FiscalPeriodOption[];
+  years: number[];
+  currentPeriod: FiscalPeriodOption | null;
 };
-
-type FinanceAccountFormState = {
-  type: "income" | "expense";
-  accountCode: string;
-  nameTh: string;
-  displayOrder: string;
-  isActive: boolean;
-};
-
-function createLine(name = "", amount = ""): BreakdownLine {
-  return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name,
-    amount,
-  };
-}
-
-function createEmptyForm(currentPeriodId?: number | string): FinanceRecordFormState {
-  return {
-    healthUnitId: "",
-    fiscalPeriodId: currentPeriodId ? String(currentPeriodId) : "",
-    notes: "",
-    recorder: "",
-    incomeLines: [createLine()],
-    expenseLines: [createLine()],
-  };
-}
 
 function formatAmount(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -149,142 +98,83 @@ function formatAmount(value: number) {
 }
 
 function formatMonthLabel(period: FiscalPeriodOption | null) {
-  if (!period) {
-    return "-";
-  }
-
-  return period.monthNameTh ? `${period.monthNameTh} ${period.fiscalYear}` : `Month ${period.month} / ${period.fiscalYear}`;
+  if (!period) return "-";
+  return period.monthNameTh ? `${period.monthNameTh} ${period.fiscalYear}` : `เดือน ${period.month} / ${period.fiscalYear}`;
 }
 
 function previewStatusLabel(status: ImportPreviewItem["status"]) {
   switch (status) {
     case "ready":
-      return "Ready";
+      return "พร้อมนำเข้า";
     case "unknown-unit":
-      return "Unknown unit";
+      return "ไม่พบหน่วยบริการ";
     case "ambiguous-unit":
-      return "Ambiguous unit";
+      return "พบหน่วยบริการซ้ำ";
     case "unknown-period":
-      return "Unknown period";
+      return "ไม่พบงวดข้อมูล";
     default:
       return status;
   }
 }
 
-function toNumber(value: string) {
-  const parsed = Number(value || 0);
-  return Number.isFinite(parsed) ? parsed : 0;
+function getNetOpening(record: FinanceRecordItem) {
+  return (record.openingDebit || 0) - (record.openingCredit || 0);
 }
 
-function buildBreakdown(lines: BreakdownLine[]) {
-  return lines.reduce((acc, line) => {
-    const name = line.name.trim();
-    if (!name) {
-      return acc;
-    }
-    const amount = toNumber(line.amount);
-    acc[name] = (acc[name] || 0) + amount;
-    return acc;
-  }, {} as Record<string, number>);
+function getNetClosing(record: FinanceRecordItem) {
+  return (record.closingDebit || 0) - (record.closingCredit || 0);
 }
-
-function sumLines(lines: BreakdownLine[]) {
-  return lines.reduce((sum, line) => sum + toNumber(line.amount), 0);
-}
-
-function breakdownToLines(breakdown: Record<string, number> | null) {
-  const entries = Object.entries(breakdown || {}).sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) {
-    return [createLine()];
-  }
-  return entries.map(([name, amount]) => createLine(name, String(amount)));
-}
-
-function breakdownEntries(breakdown: Record<string, number> | null) {
-  return Object.entries(breakdown || {}).sort((a, b) => b[1] - a[1]);
-}
-
-type Props = {
-  units: HealthUnitOption[];
-  fiscalPeriods: FiscalPeriodOption[];
-  years: number[];
-  currentPeriod: FiscalPeriodOption | null;
-};
 
 export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPeriod }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [records, setRecords] = useState<FinanceRecordItem[]>([]);
-  const [accounts, setAccounts] = useState<FinanceAccountItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState(String(currentPeriod?.fiscalYear ?? years[0] ?? ""));
   const [selectedMonth, setSelectedMonth] = useState(String(currentPeriod?.month ?? ""));
-  const [form, setForm] = useState<FinanceRecordFormState>(createEmptyForm(currentPeriod?.id));
-  const [editingRecord, setEditingRecord] = useState<FinanceRecordItem | null>(null);
-  const [editForm, setEditForm] = useState<FinanceRecordFormState>(createEmptyForm());
-  const [accountForm, setAccountForm] = useState<FinanceAccountFormState>({
-    type: "income",
-    accountCode: "",
-    nameTh: "",
-    displayOrder: "0",
-    isActive: true,
-  });
-  const [editingAccount, setEditingAccount] = useState<FinanceAccountItem | null>(null);
-  const [editAccountForm, setEditAccountForm] = useState<FinanceAccountFormState>({
-    type: "income",
-    accountCode: "",
-    nameTh: "",
-    displayOrder: "0",
-    isActive: true,
-  });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
-  const [creatingFiscalYear, setCreatingFiscalYear] = useState(false);
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreviewResponse | null>(null);
-
-  const filteredRecords = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    if (!keyword) {
-      return records;
-    }
-
-    return records.filter((record) => {
-      return (
-        record.unitCode.toLowerCase().includes(keyword) ||
-        record.unitName.toLowerCase().includes(keyword) ||
-        record.monthNameTh.toLowerCase().includes(keyword) ||
-        (record.recorder || "").toLowerCase().includes(keyword)
-      );
-    });
-  }, [records, search]);
-
-  const unitsWithFinanceRecords = useMemo(() => {
-    return new Set(records.map((record) => record.healthUnitId)).size;
-  }, [records]);
 
   const periodsForSelectedYear = useMemo(() => {
     const year = Number(selectedYear);
     return fiscalPeriods.filter((period) => period.fiscalYear === year && period.id);
   }, [fiscalPeriods, selectedYear]);
 
-  const recordsForSelectedMonth = useMemo(() => {
+  const selectedMonthPeriod = useMemo(() => {
     const month = Number(selectedMonth);
-    if (!month) {
-      return [];
-    }
-    return records.filter((record) => record.month === month);
-  }, [records, selectedMonth]);
+    return periodsForSelectedYear.find((period) => period.month === month) ?? null;
+  }, [periodsForSelectedYear, selectedMonth]);
+
+  const filteredRecords = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return records.filter((record) => {
+      if (selectedMonth && String(record.month) !== selectedMonth) {
+        return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
+      return (
+        record.unitCode.toLowerCase().includes(keyword) ||
+        record.unitName.toLowerCase().includes(keyword) ||
+        record.amphoeName.toLowerCase().includes(keyword) ||
+        (record.recorder || "").toLowerCase().includes(keyword)
+      );
+    });
+  }, [records, search, selectedMonth]);
 
   const monthlyImportRows = useMemo(() => {
     return units
       .map((unit) => {
-        const record = recordsForSelectedMonth.find((item) => item.healthUnitId === unit.id);
+        const record = records.find((item) => item.healthUnitId === unit.id && String(item.month) === selectedMonth);
         return {
           ...unit,
           record,
@@ -292,12 +182,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         };
       })
       .sort((a, b) => a.code.localeCompare(b.code));
-  }, [recordsForSelectedMonth, units]);
-
-  const selectedMonthPeriod = useMemo(() => {
-    const month = Number(selectedMonth);
-    return periodsForSelectedYear.find((period) => period.month === month) ?? null;
-  }, [periodsForSelectedYear, selectedMonth]);
+  }, [records, selectedMonth, units]);
 
   const importedUnitCount = useMemo(
     () => monthlyImportRows.filter((row) => row.status === "imported").length,
@@ -309,6 +194,18 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     [monthlyImportRows]
   );
 
+  const totals = useMemo(() => {
+    return filteredRecords.reduce(
+      (sum, record) => ({
+        opening: sum.opening + getNetOpening(record),
+        movementDebit: sum.movementDebit + (record.movementDebit || 0),
+        movementCredit: sum.movementCredit + (record.movementCredit || 0),
+        closing: sum.closing + getNetClosing(record),
+      }),
+      { opening: 0, movementDebit: 0, movementCredit: 0, closing: 0 }
+    );
+  }, [filteredRecords]);
+
   useEffect(() => {
     if (!selectedYear && (currentPeriod?.fiscalYear || years[0])) {
       setSelectedYear(String(currentPeriod?.fiscalYear ?? years[0]));
@@ -317,109 +214,17 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
   useEffect(() => {
     if (periodsForSelectedYear.length === 0) {
-      setForm((current) => ({ ...current, fiscalPeriodId: "" }));
       setSelectedMonth("");
       return;
     }
 
-    setForm((current) => {
-      const stillSelected = periodsForSelectedYear.some((period) => String(period.id) === current.fiscalPeriodId);
-      if (stillSelected) {
-        return current;
-      }
-
-      const defaultPeriod =
-        periodsForSelectedYear.find((period) => period.id === currentPeriod?.id) ?? periodsForSelectedYear[0];
-
-      return {
-        ...current,
-        fiscalPeriodId: defaultPeriod?.id ? String(defaultPeriod.id) : "",
-      };
-    });
-  }, [currentPeriod?.id, periodsForSelectedYear]);
-
-  useEffect(() => {
-    if (periodsForSelectedYear.length === 0) {
-      return;
-    }
-
     const stillSelected = periodsForSelectedYear.some((period) => String(period.month) === selectedMonth);
-    if (stillSelected) {
-      return;
-    }
+    if (stillSelected) return;
 
-    const fallbackMonth = currentPeriod?.fiscalYear === Number(selectedYear) ? currentPeriod?.month : periodsForSelectedYear[0]?.month;
+    const fallbackMonth =
+      currentPeriod?.fiscalYear === Number(selectedYear) ? currentPeriod?.month : periodsForSelectedYear[0]?.month;
     setSelectedMonth(fallbackMonth ? String(fallbackMonth) : "");
   }, [currentPeriod?.fiscalYear, currentPeriod?.month, periodsForSelectedYear, selectedMonth, selectedYear]);
-
-  const incomeOptions = useMemo(() => {
-    return Array.from(
-      new Set(
-        accounts
-          .filter((account) => account.type === "income" && account.isActive)
-          .map((account) => account.nameTh)
-      )
-    ).sort((a, b) => a.localeCompare(b, "th"));
-  }, [accounts]);
-
-  const expenseOptions = useMemo(() => {
-    return Array.from(
-      new Set(
-        accounts
-          .filter((account) => account.type === "expense" && account.isActive)
-          .map((account) => account.nameTh)
-      )
-    ).sort((a, b) => a.localeCompare(b, "th"));
-  }, [accounts]);
-
-  const createIncomeTotal = useMemo(() => sumLines(form.incomeLines), [form.incomeLines]);
-  const createExpenseTotal = useMemo(() => sumLines(form.expenseLines), [form.expenseLines]);
-  const editIncomeTotal = useMemo(() => sumLines(editForm.incomeLines), [editForm.incomeLines]);
-  const editExpenseTotal = useMemo(() => sumLines(editForm.expenseLines), [editForm.expenseLines]);
-
-  function resetFeedback() {
-    setMessage("");
-    setError("");
-  }
-
-  async function loadRecords() {
-    try {
-      setIsLoading(true);
-      setError("");
-      const year = selectedYear ? `&fiscalYear=${selectedYear}` : "";
-      const response = await fetch(`/api/finance/records?pageSize=500${year}`, { cache: "no-store" });
-      const body = (await response.json()) as { records?: FinanceRecordItem[]; error?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "โหลดข้อมูลการเงินไม่สำเร็จ");
-      }
-      setRecords(body.records || []);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "โหลดข้อมูลการเงินไม่สำเร็จ");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function loadAccounts() {
-    try {
-      const response = await fetch("/api/finance-accounts", { cache: "no-store" });
-      const body = (await response.json()) as FinanceAccountItem[] | { error?: string };
-      if (!response.ok) {
-        throw new Error((body as { error?: string }).error || "โหลดรายการรายได้และรายจ่ายไม่สำเร็จ");
-      }
-      setAccounts(body as FinanceAccountItem[]);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "โหลดรายการรายได้และรายจ่ายไม่สำเร็จ");
-    }
-  }
-
-  useEffect(() => {
-    void loadRecords();
-  }, [selectedYear]);
-
-  useEffect(() => {
-    void loadAccounts();
-  }, []);
 
   useEffect(() => {
     if (folderInputRef.current) {
@@ -433,1160 +238,454 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     setImportPreview(null);
   }, [selectedFiles, selectedYear]);
 
-  function updateLines(
-    target: "incomeLines" | "expenseLines",
-    updater: (lines: BreakdownLine[]) => BreakdownLine[]
-  ) {
-    setForm((current) => ({ ...current, [target]: updater(current[target]) }));
-  }
+  useEffect(() => {
+    void loadRecords();
+  }, [selectedYear]);
 
-  function updateEditLines(
-    target: "incomeLines" | "expenseLines",
-    updater: (lines: BreakdownLine[]) => BreakdownLine[]
-  ) {
-    setEditForm((current) => ({ ...current, [target]: updater(current[target]) }));
-  }
-
-  function setLineValue(
-    target: "incomeLines" | "expenseLines",
-    id: string,
-    field: "name" | "amount",
-    value: string
-  ) {
-    updateLines(target, (lines) => lines.map((line) => (line.id === id ? { ...line, [field]: value } : line)));
-  }
-
-  function setEditLineValue(
-    target: "incomeLines" | "expenseLines",
-    id: string,
-    field: "name" | "amount",
-    value: string
-  ) {
-    updateEditLines(target, (lines) => lines.map((line) => (line.id === id ? { ...line, [field]: value } : line)));
-  }
-
-  function addLine(target: "incomeLines" | "expenseLines") {
-    updateLines(target, (lines) => [...lines, createLine()]);
-  }
-
-  function addEditLine(target: "incomeLines" | "expenseLines") {
-    updateEditLines(target, (lines) => [...lines, createLine()]);
-  }
-
-  function removeLine(target: "incomeLines" | "expenseLines", id: string) {
-    updateLines(target, (lines) => (lines.length > 1 ? lines.filter((line) => line.id !== id) : [createLine()]));
-  }
-
-  function removeEditLine(target: "incomeLines" | "expenseLines", id: string) {
-    updateEditLines(target, (lines) => (lines.length > 1 ? lines.filter((line) => line.id !== id) : [createLine()]));
-  }
-
-  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    resetFeedback();
-    setIsSaving(true);
-
+  async function loadRecords() {
     try {
-      const incomeBreakdown = buildBreakdown(form.incomeLines);
-      const expenseBreakdown = buildBreakdown(form.expenseLines);
-      const response = await fetch("/api/finance/records", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          healthUnitId: Number(form.healthUnitId),
-          fiscalPeriodId: Number(form.fiscalPeriodId),
-          income: createIncomeTotal,
-          expense: createExpenseTotal,
-          incomeBreakdown,
-          expenseBreakdown,
-          notes: form.notes || undefined,
-          recorder: form.recorder || undefined,
-        }),
-      });
-
-      const body = (await response.json()) as { error?: string; message?: string };
+      setIsLoading(true);
+      setError("");
+      const year = selectedYear ? `&fiscalYear=${selectedYear}` : "";
+      const response = await fetch(`/api/finance/records?pageSize=500${year}`, { cache: "no-store" });
+      const body = (await response.json()) as { records?: FinanceRecordItem[]; error?: string };
       if (!response.ok) {
-        throw new Error(body.error || "เพิ่มข้อมูลการเงินไม่สำเร็จ");
+        throw new Error(body.error || "โหลดข้อมูลงบทดลองไม่สำเร็จ");
       }
-
-      setMessage(body.message || "เพิ่มข้อมูลการเงินเรียบร้อยแล้ว");
-      setForm(createEmptyForm(currentPeriod?.id));
-      await loadRecords();
-      await loadAccounts();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เพิ่มข้อมูลการเงินไม่สำเร็จ");
+      setRecords(body.records || []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "โหลดข้อมูลงบทดลองไม่สำเร็จ");
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   }
 
-  function openEditDialog(record: FinanceRecordItem) {
-    resetFeedback();
-    setEditingRecord(record);
-    setEditForm({
-      healthUnitId: String(record.healthUnitId),
-      fiscalPeriodId: String(record.fiscalPeriodId),
-      notes: record.notes || "",
-      recorder: record.recorder || "",
-      incomeLines: breakdownToLines(record.incomeBreakdown),
-      expenseLines: breakdownToLines(record.expenseBreakdown),
-    });
-  }
-
-  async function handleUpdate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editingRecord) {
-      return;
-    }
-
-    resetFeedback();
-    setIsSaving(true);
-
-    try {
-      const incomeBreakdown = buildBreakdown(editForm.incomeLines);
-      const expenseBreakdown = buildBreakdown(editForm.expenseLines);
-      const response = await fetch(`/api/finance/records/${editingRecord.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          income: editIncomeTotal,
-          expense: editExpenseTotal,
-          incomeBreakdown,
-          expenseBreakdown,
-          notes: editForm.notes || undefined,
-          recorder: editForm.recorder || undefined,
-        }),
-      });
-
-      const body = (await response.json()) as { error?: string; message?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "แก้ไขข้อมูลการเงินไม่สำเร็จ");
-      }
-
-      setMessage(body.message || "แก้ไขข้อมูลการเงินเรียบร้อยแล้ว");
-      setEditingRecord(null);
-      await loadRecords();
-      await loadAccounts();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "แก้ไขข้อมูลการเงินไม่สำเร็จ");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleDelete(record: FinanceRecordItem) {
-    if (!window.confirm(`ยืนยันการลบข้อมูลการเงิน ${record.unitCode} ${record.monthNameTh} ${record.fiscalYear} ?`)) {
-      return;
-    }
-
-    resetFeedback();
-    setIsSaving(true);
-
-    try {
-      const response = await fetch(`/api/finance/records/${record.id}`, { method: "DELETE" });
-      const body = (await response.json()) as { error?: string; message?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "ลบข้อมูลการเงินไม่สำเร็จ");
-      }
-
-      setMessage(body.message || "ลบข้อมูลการเงินเรียบร้อยแล้ว");
-      await loadRecords();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ลบข้อมูลการเงินไม่สำเร็จ");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleImport() {
-    if (selectedFiles.length === 0) {
-      setError("กรุณาเลือกไฟล์ Excel");
-      return;
-    }
-
-    resetFeedback();
-    setImporting(true);
-    setLastImport(null);
-
-    try {
-      const payload = new FormData();
-      selectedFiles.forEach((file) => payload.append("files", file));
-      payload.set("fiscalYear", selectedYear);
-      payload.set("recorder", form.recorder || "settings-import");
-
-      const response = await fetch("/api/finance/import", {
-        method: "POST",
-        body: payload,
-      });
-      const body = (await response.json()) as ImportResponse & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(body.error || "นำเข้าข้อมูลการเงินไม่สำเร็จ");
-      }
-
-      setLastImport(body);
-      setMessage(`นำเข้าสำเร็จ เพิ่มใหม่ ${body.imported} ปรับปรุง ${body.updated} ข้าม ${body.skipped}`);
-      setSelectedFiles([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      if (folderInputRef.current) {
-        folderInputRef.current.value = "";
-      }
-      await loadRecords();
-      await loadAccounts();
-    } catch (importError) {
-      setError(importError instanceof Error ? importError.message : "นำเข้าข้อมูลการเงินไม่สำเร็จ");
-    } finally {
-      setImporting(false);
-    }
+  function handleFileSelection(files: FileList | null) {
+    if (!files) return;
+    setSelectedFiles(Array.from(files).filter((file) => file.size > 0));
+    setMessage("");
+    setError("");
   }
 
   async function handlePreviewImport() {
     if (selectedFiles.length === 0) {
-      setError("Please select Excel files first");
+      setError("กรุณาเลือกไฟล์งบทดลองก่อน");
       return;
     }
 
-    resetFeedback();
     setPreviewing(true);
-    setImportPreview(null);
+    setError("");
+    setMessage("");
 
     try {
-      const payload = new FormData();
-      selectedFiles.forEach((file) => payload.append("files", file));
-      payload.set("fiscalYear", selectedYear);
-      payload.set("mode", "preview");
+      const formData = new FormData();
+      formData.append("mode", "preview");
+      formData.append("fiscalYear", selectedYear);
+      for (const file of selectedFiles) {
+        formData.append("files", file);
+      }
 
       const response = await fetch("/api/finance/import", {
         method: "POST",
-        body: payload,
+        body: formData,
       });
-      const body = (await response.json()) as ImportPreviewResponse & { error?: string };
 
+      const body = (await response.json()) as ImportPreviewResponse & { error?: string };
       if (!response.ok) {
-        throw new Error(body.error || "Preview failed");
+        throw new Error(body.error || "ตรวจสอบไฟล์งบทดลองไม่สำเร็จ");
       }
 
       setImportPreview(body);
-      setMessage(`Preview ready: ${body.readyCount} ready, ${body.issueCount} issues`);
+      setMessage(`ตรวจสอบไฟล์ ${body.processedFiles} ไฟล์แล้ว พร้อมนำเข้า ${body.readyCount} รายการ`);
     } catch (previewError) {
-      setError(previewError instanceof Error ? previewError.message : "Preview failed");
+      setError(previewError instanceof Error ? previewError.message : "ตรวจสอบไฟล์งบทดลองไม่สำเร็จ");
     } finally {
       setPreviewing(false);
     }
   }
 
-  async function handleCreateSelectedFiscalYear() {
-    if (!selectedYear) {
-      setError("Please select fiscal year first");
+  async function handleImport() {
+    if (selectedFiles.length === 0) {
+      setError("กรุณาเลือกไฟล์งบทดลองก่อน");
       return;
     }
 
-    resetFeedback();
-    setCreatingFiscalYear(true);
+    setImporting(true);
+    setError("");
+    setMessage("");
 
     try {
-      const response = await fetch("/api/fiscal-periods", {
+      const formData = new FormData();
+      formData.append("fiscalYear", selectedYear);
+      formData.append("recorder", "trial-balance-import");
+      for (const file of selectedFiles) {
+        formData.append("files", file);
+      }
+
+      const response = await fetch("/api/finance/import", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fiscalYear: Number(selectedYear) }),
+        body: formData,
       });
-      const body = (await response.json()) as { message?: string; error?: string };
 
+      const body = (await response.json()) as ImportResponse & { error?: string };
       if (!response.ok) {
-        throw new Error(body.error || "Unable to create fiscal year");
+        throw new Error(body.error || "นำเข้างบทดลองไม่สำเร็จ");
       }
 
-      setMessage(body.message || `Fiscal year ${selectedYear} is ready`);
-      window.location.reload();
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Unable to create fiscal year");
+      setLastImport(body);
+      setMessage(`นำเข้าเสร็จแล้ว: เพิ่มใหม่ ${body.imported} รายการ, อัปเดต ${body.updated} รายการ, ข้าม ${body.skipped} รายการ`);
+      setSelectedFiles([]);
+      setImportPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (folderInputRef.current) folderInputRef.current.value = "";
+      await loadRecords();
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "นำเข้างบทดลองไม่สำเร็จ");
     } finally {
-      setCreatingFiscalYear(false);
+      setImporting(false);
     }
   }
 
-  async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    resetFeedback();
-    setIsSaving(true);
-
-    try {
-      const response = await fetch("/api/finance-accounts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: accountForm.type,
-          accountCode: accountForm.accountCode.trim() || null,
-          nameTh: accountForm.nameTh,
-          displayOrder: Number(accountForm.displayOrder || 0),
-          isActive: accountForm.isActive,
-        }),
-      });
-      const body = (await response.json()) as { error?: string; message?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "เพิ่ม master รายการการเงินไม่สำเร็จ");
-      }
-
-      setMessage(body.message || "เพิ่ม master รายการการเงินเรียบร้อยแล้ว");
-      setAccountForm({
-        type: "income",
-        accountCode: "",
-        nameTh: "",
-        displayOrder: "0",
-        isActive: true,
-      });
-      await loadAccounts();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "เพิ่ม master รายการการเงินไม่สำเร็จ");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function openEditAccountDialog(account: FinanceAccountItem) {
-    resetFeedback();
-    setEditingAccount(account);
-    setEditAccountForm({
-      type: account.type,
-      accountCode: account.accountCode ?? "",
-      nameTh: account.nameTh,
-      displayOrder: String(account.displayOrder),
-      isActive: account.isActive,
-    });
-  }
-
-  async function handleUpdateAccount(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editingAccount) {
+  async function handleDelete(record: FinanceRecordItem) {
+    if (!window.confirm(`ยืนยันการลบงบทดลองของ ${record.unitName} เดือน ${record.monthNameTh} ${record.fiscalYear} ?`)) {
       return;
     }
 
-    resetFeedback();
-    setIsSaving(true);
+    setError("");
+    setMessage("");
 
     try {
-      const response = await fetch(`/api/finance-accounts/${editingAccount.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: editAccountForm.type,
-          accountCode: editAccountForm.accountCode.trim() || null,
-          nameTh: editAccountForm.nameTh,
-          displayOrder: Number(editAccountForm.displayOrder || 0),
-          isActive: editAccountForm.isActive,
-        }),
-      });
-      const body = (await response.json()) as { error?: string; message?: string };
+      const response = await fetch(`/api/finance/records/${record.id}`, { method: "DELETE" });
+      const body = (await response.json()) as { error?: string };
       if (!response.ok) {
-        throw new Error(body.error || "แก้ไข master รายการการเงินไม่สำเร็จ");
+        throw new Error(body.error || "ลบข้อมูลงบทดลองไม่สำเร็จ");
       }
 
-      setMessage(body.message || "แก้ไข master รายการการเงินเรียบร้อยแล้ว");
-      setEditingAccount(null);
-      await loadAccounts();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "แก้ไข master รายการการเงินไม่สำเร็จ");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleDeleteAccount(account: FinanceAccountItem) {
-    if (!window.confirm(`ยืนยันการลบรายการ ${account.nameTh} ?`)) {
-      return;
-    }
-
-    resetFeedback();
-    setIsSaving(true);
-
-    try {
-      const response = await fetch(`/api/finance-accounts/${account.id}`, { method: "DELETE" });
-      const body = (await response.json()) as { error?: string; message?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "ลบ master รายการการเงินไม่สำเร็จ");
-      }
-
-      setMessage(body.message || "ลบ master รายการการเงินเรียบร้อยแล้ว");
-      await loadAccounts();
+      setRecords((current) => current.filter((item) => item.id !== record.id));
+      setMessage("ลบข้อมูลงบทดลองเรียบร้อยแล้ว");
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ลบ master รายการการเงินไม่สำเร็จ");
-    } finally {
-      setIsSaving(false);
+      setError(deleteError instanceof Error ? deleteError.message : "ลบข้อมูลงบทดลองไม่สำเร็จ");
     }
   }
 
   return (
     <div className="space-y-6">
-      {message ? <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div> : null}
-      {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div> : null}
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold">จัดการข้อมูลงบทดลอง</h2>
+        <p className="text-sm text-muted-foreground">
+          หน้านี้ใช้สำหรับนำเข้า ตรวจสอบความครบถ้วน และติดตามสถานะงบทดลองรายเดือนของทุกหน่วยบริการ โดยไม่ใช้ฟอร์มรายรับหรือรายจ่ายแบบกรอกมืออีกต่อไป
+        </p>
+      </div>
 
-      <datalist id="income-account-options">
-        {incomeOptions.map((item) => (
-          <option key={item} value={item} />
-        ))}
-      </datalist>
-      <datalist id="expense-account-options">
-        {expenseOptions.map((item) => (
-          <option key={item} value={item} />
-        ))}
-      </datalist>
+      {message ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
+      {error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div> : null}
+
+      <div className="grid gap-4 lg:grid-cols-4">
+        <SummaryCard label="หน่วยบริการทั้งหมด" value={`${units.length} แห่ง`} />
+        <SummaryCard label={`นำเข้าแล้ว (${formatMonthLabel(selectedMonthPeriod)})`} value={`${importedUnitCount} แห่ง`} />
+        <SummaryCard label={`ยังไม่ส่ง (${formatMonthLabel(selectedMonthPeriod)})`} value={`${missingUnitCount} แห่ง`} />
+        <SummaryCard label={`ไฟล์ที่เลือก`} value={`${selectedFiles.length} ไฟล์`} />
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">เมนูการเงิน</CardTitle>
+          <CardTitle>นำเข้างบทดลองรายเดือน</CardTitle>
+          <CardDescription>
+            ใช้ไฟล์งบทดลองเป็นข้อมูลตั้งต้นของรายงานทั้งหมด เช่น ยกยอดมา เดบิต/เครดิตระหว่างเดือน และยกยอดไป
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href="/finance/income/create">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              บันทึกรายรับ
-            </Link>
-          </Button>
-          <Button asChild variant="secondary">
-            <Link href="/finance/expense/create">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              บันทึกรายจ่าย
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/finance/list">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              รายการข้อมูล
-            </Link>
-          </Button>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Field label="ปีงบประมาณ">
+              <select
+                value={selectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="เดือนเป้าหมาย">
+              <select
+                value={selectedMonth}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                {periodsForSelectedYear.map((period) => (
+                  <option key={period.id} value={period.month}>
+                    {period.monthNameTh || `เดือน ${period.month}`}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="เลือกไฟล์ Excel">
+              <Input ref={fileInputRef} type="file" accept=".xlsx,.xls" multiple onChange={(event) => handleFileSelection(event.target.files)} />
+            </Field>
+
+            <Field label="หรือเลือกทั้งโฟลเดอร์">
+              <Input ref={folderInputRef} type="file" onChange={(event) => handleFileSelection(event.target.files)} />
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={handlePreviewImport} disabled={previewing || selectedFiles.length === 0}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {previewing ? "กำลังตรวจสอบ..." : "Preview ก่อนนำเข้า"}
+            </Button>
+            <Button type="button" onClick={handleImport} disabled={importing || selectedFiles.length === 0}>
+              <Upload className="mr-2 h-4 w-4" />
+              {importing ? "กำลังนำเข้า..." : "นำเข้างบทดลอง"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSelectedFiles([]);
+                setImportPreview(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                if (folderInputRef.current) folderInputRef.current.value = "";
+              }}
+            >
+              ล้างรายการไฟล์
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/finance/list">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                เปิดหน้ารายการงบทดลอง
+              </Link>
+            </Button>
+          </div>
+
+          {selectedFiles.length > 0 ? (
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <p className="mb-2 text-sm font-medium">ไฟล์ที่เลือก</p>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {selectedFiles.map((file) => (
+                  <div key={`${file.name}-${file.size}`} className="rounded-md border bg-background px-3 py-2 text-sm">
+                    {file.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="บันทึกการเงินที่แสดง" value={String(records.length)} />
-        <SummaryCard label="หน่วยบริการที่มีข้อมูล" value={String(unitsWithFinanceRecords)} />
-        <SummaryCard label="รายรับรวม" value={formatAmount(records.reduce((sum, record) => sum + record.income, 0))} />
-        <SummaryCard label="รายจ่ายรวม" value={formatAmount(records.reduce((sum, record) => sum + record.expense, 0))} />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">จัดการรายการรายได้และรายจ่าย</CardTitle>
-              <CardDescription>สร้าง แก้ไข และลบ master ของชื่อรายการที่ใช้ในฟอร์มการเงิน</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <form className="space-y-4" onSubmit={handleCreateAccount}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="ประเภท">
-                    <select
-                      value={accountForm.type}
-                      onChange={(event) => setAccountForm((current) => ({ ...current, type: event.target.value as "income" | "expense" }))}
-                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="income">รายได้</option>
-                      <option value="expense">รายจ่าย</option>
-                    </select>
-                  </Field>
-                  <Field label="รหัสบัญชี">
-                    <Input value={accountForm.accountCode} onChange={(event) => setAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เช่น 4404040101.001" />
-                  </Field>
-                </div>
-                <Field label="ชื่อรายการ">
-                  <Input value={accountForm.nameTh} onChange={(event) => setAccountForm((current) => ({ ...current, nameTh: event.target.value }))} />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="ลำดับ">
-                    <Input value={accountForm.displayOrder} onChange={(event) => setAccountForm((current) => ({ ...current, displayOrder: event.target.value }))} />
-                  </Field>
-                  <Field label="สถานะ">
-                    <select
-                      value={accountForm.isActive ? "active" : "inactive"}
-                      onChange={(event) => setAccountForm((current) => ({ ...current, isActive: event.target.value === "active" }))}
-                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="active">ใช้งาน</option>
-                      <option value="inactive">ปิดใช้งาน</option>
-                    </select>
-                  </Field>
-                </div>
-                <Button type="submit" className="w-full" disabled={isSaving || !accountForm.nameTh.trim()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {isSaving ? "กำลังบันทึก..." : "เพิ่มรายการ master"}
-                </Button>
-              </form>
-
-              <div className="rounded-xl border">
-                <div className="border-b px-4 py-3 text-sm font-medium">รายการที่มีอยู่</div>
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-background">
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="px-4 py-2 font-medium">ประเภท</th>
-                        <th className="px-4 py-2 font-medium">รหัสบัญชี</th>
-                        <th className="px-4 py-2 font-medium">ชื่อรายการ</th>
-                        <th className="px-4 py-2 font-medium">สถานะ</th>
-                        <th className="px-4 py-2 text-right font-medium">จัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {accounts.map((account) => (
-                        <tr key={account.id} className="border-b last:border-b-0">
-                          <td className="px-4 py-3">{account.type === "income" ? "รายได้" : "รายจ่าย"}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{account.accountCode ?? "—"}</td>
-                          <td className="px-4 py-3">{account.nameTh}</td>
-                          <td className="px-4 py-3">{account.isActive ? "ใช้งาน" : "ปิดใช้งาน"}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex justify-end gap-2">
-                              <Button type="button" variant="outline" size="sm" onClick={() => openEditAccountDialog(account)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                แก้ไข
-                              </Button>
-                              <Button type="button" variant="outline" size="sm" onClick={() => void handleDeleteAccount(account)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                ลบ
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">นำเข้าข้อมูลการเงิน</CardTitle>
-              <CardDescription>อ่านรหัส `pcucode` โดย 5 หลักแรกเป็นหน่วยบริการ และ 2 หลักท้ายเป็นเดือน</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Field label="ปีงบประมาณ">
-                <select
-                  value={selectedYear}
-                  onChange={(event) => setSelectedYear(event.target.value)}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="ผู้บันทึก">
-                <Input value={form.recorder} onChange={(event) => setForm((current) => ({ ...current, recorder: event.target.value }))} placeholder="settings-import" />
-              </Field>
-              <Field label="ไฟล์ Excel">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".xlsx,.xls"
-                  className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
-                />
-              </Field>
-              <Field label="โฟลเดอร์เอกสารรายเดือน">
-                <input
-                  ref={folderInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
-                />
-              </Field>
-              {selectedFiles.length > 0 ? (
-                <div className="rounded-xl border bg-muted/20 p-4 text-sm">
-                  <p>เลือกแล้ว {selectedFiles.length} ไฟล์</p>
-                  <p className="text-muted-foreground">ตัวอย่าง: {selectedFiles.slice(0, 3).map((file) => file.name).join(", ")}</p>
-                </div>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => void handleCreateSelectedFiscalYear()}
-                disabled={creatingFiscalYear || !selectedYear}
-              >
-                {creatingFiscalYear ? `Preparing fiscal year ${selectedYear}...` : `Create or repair fiscal year ${selectedYear || ""}`}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => void handlePreviewImport()}
-                disabled={previewing || importing || !selectedYear || selectedFiles.length === 0}
-              >
-                {previewing ? "Previewing..." : "Preview before import"}
-              </Button>
-              <Button type="button" className="w-full" onClick={() => void handleImport()} disabled={importing || !selectedYear}>
-                <Upload className="mr-2 h-4 w-4" />
-                {importing ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
-              </Button>
-              {importPreview ? (
-                <div className="rounded-xl border bg-muted/20 p-4 text-sm">
-                  <div className="grid gap-3 md:grid-cols-4">
-                    <div>
-                      <p className="text-muted-foreground">Processed files</p>
-                      <p className="text-lg font-semibold">{importPreview.processedFiles}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Ready</p>
-                      <p className="text-lg font-semibold">{importPreview.readyCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Issues</p>
-                      <p className="text-lg font-semibold">{importPreview.issueCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Detected units</p>
-                      <p className="text-lg font-semibold">{importPreview.detectedUnits.length}</p>
-                    </div>
-                  </div>
-                  {importPreview.detectedUnits.length > 0 ? (
-                    <p className="mt-3 text-muted-foreground">Units: {importPreview.detectedUnits.join(", ")}</p>
-                  ) : null}
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-xs">
-                      <thead>
-                        <tr className="border-b text-left text-muted-foreground">
-                          <th className="pb-2 font-medium">Unit</th>
-                          <th className="pb-2 font-medium">Month</th>
-                          <th className="pb-2 font-medium text-right">Expense</th>
-                          <th className="pb-2 font-medium">Status</th>
-                          <th className="pb-2 font-medium">Action</th>
-                          <th className="pb-2 font-medium">Files</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {importPreview.items.slice(0, 20).map((item, index) => (
-                          <tr key={`${item.sourceCode}-${item.unitCode}-${item.month}-${index}`} className="border-b last:border-b-0">
-                            <td className="py-2">
-                              <div className="font-medium">{item.unitName || "-"}</div>
-                              <div className="text-muted-foreground">{item.unitCode || item.sourceCode}</div>
-                            </td>
-                            <td className="py-2">{item.month}/{item.fiscalYear}</td>
-                            <td className="py-2 text-right">{formatAmount(item.expense)}</td>
-                            <td className="py-2">
-                              <span className={item.status === "ready" ? "text-emerald-600" : "text-amber-600"}>
-                                {previewStatusLabel(item.status)}
-                              </span>
-                              {item.reason ? <div className="text-muted-foreground">{item.reason}</div> : null}
-                            </td>
-                            <td className="py-2">{item.willUpdate ? "Update existing" : "Create new"}</td>
-                            <td className="py-2 text-muted-foreground">{item.files?.join(", ") || "-"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {importPreview.items.length > 20 ? (
-                    <p className="mt-3 text-xs text-muted-foreground">Showing first 20 of {importPreview.items.length} preview rows.</p>
-                  ) : null}
-                  {importPreview.issues.length > 0 ? (
-                    <div className="mt-3 space-y-2">
-                      {importPreview.issues.slice(0, 5).map((issue, index) => (
-                        <div key={`${issue.sourceCode}-${index}`} className="rounded-md bg-background px-3 py-2 text-xs text-muted-foreground">
-                          {issue.sourceCode || "-"}: {issue.reason}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {lastImport ? (
-                <div className="rounded-xl border bg-muted/20 p-4 text-sm">
-                  <p>ประมวลผล {lastImport.processedFiles} ไฟล์</p>
-                  <p>เพิ่มใหม่ {lastImport.imported} รายการ</p>
-                  <p>ปรับปรุง {lastImport.updated} รายการ</p>
-                  <p>ข้าม {lastImport.skipped} รายการ</p>
-                  {lastImport.detectedUnits.length > 0 ? (
-                    <p className="text-muted-foreground">หน่วยบริการที่ตรวจพบ: {lastImport.detectedUnits.join(", ")}</p>
-                  ) : null}
-                  {lastImport.issues.length > 0 ? (
-                    <div className="mt-3 space-y-2">
-                      {lastImport.issues.slice(0, 5).map((issue, index) => (
-                        <div key={`${issue.sourceCode}-${index}`} className="rounded-md bg-background px-3 py-2 text-xs text-muted-foreground">
-                          {issue.sourceCode || "-"}: {issue.reason}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Monthly import dashboard</CardTitle>
-              <CardDescription>Track imported, missing, and preview-ready units for the selected month.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-                <Field label="Dashboard month">
-                  <select
-                    value={selectedMonth}
-                    onChange={(event) => setSelectedMonth(event.target.value)}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    {periodsForSelectedYear.map((period) => (
-                      <option key={period.id} value={period.month}>
-                        {formatMonthLabel(period)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <div className="grid gap-3 md:grid-cols-4">
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <p className="text-sm text-muted-foreground">Month</p>
-                    <p className="text-lg font-semibold">{formatMonthLabel(selectedMonthPeriod)}</p>
-                  </div>
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <p className="text-sm text-muted-foreground">Imported</p>
-                    <p className="text-lg font-semibold">{importedUnitCount}</p>
-                  </div>
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <p className="text-sm text-muted-foreground">Missing</p>
-                    <p className="text-lg font-semibold">{missingUnitCount}</p>
-                  </div>
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <p className="text-sm text-muted-foreground">Ready in preview</p>
-                    <p className="text-lg font-semibold">
-                      {(importPreview?.items ?? []).filter((item) => item.month === Number(selectedMonth) && item.status === "ready").length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="pb-3 font-medium">Unit</th>
-                      <th className="pb-3 font-medium">Status</th>
-                      <th className="pb-3 font-medium text-right">Income</th>
-                      <th className="pb-3 font-medium text-right">Expense</th>
-                      <th className="pb-3 font-medium text-right">Balance</th>
-                      <th className="pb-3 font-medium">Recorder</th>
-                      <th className="pb-3 font-medium">Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyImportRows.map((row) => {
-                      const previewItem = (importPreview?.items ?? []).find(
-                        (item) => item.month === Number(selectedMonth) && (item.unitCode === row.code || item.unitName === row.name)
-                      );
-
-                      return (
-                        <tr key={row.id} className="border-b last:border-b-0">
-                          <td className="py-3">
-                            <div className="font-medium">{row.code}</div>
-                            <div className="text-muted-foreground">{row.name}</div>
-                          </td>
-                          <td className="py-3">
-                            <span className={row.status === "imported" ? "text-emerald-600" : "text-amber-600"}>
-                              {row.status === "imported" ? "Imported" : "Missing"}
-                            </span>
-                          </td>
-                          <td className="py-3 text-right">{formatAmount(row.record?.income ?? 0)}</td>
-                          <td className="py-3 text-right">{formatAmount(row.record?.expense ?? 0)}</td>
-                          <td className="py-3 text-right">{formatAmount(row.record?.balance ?? 0)}</td>
-                          <td className="py-3 text-muted-foreground">{row.record?.recorder || "-"}</td>
-                          <td className="py-3">
-                            {previewItem ? (
-                              <div>
-                                <div className={previewItem.status === "ready" ? "text-emerald-600" : "text-amber-600"}>
-                                  {previewStatusLabel(previewItem.status)}
-                                </div>
-                                <div className="text-muted-foreground">
-                                  {previewItem.willUpdate ? "Will update existing record" : "Will create new record"}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {!selectedMonth ? (
-                <div className="rounded-xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
-                  Select a month to see import coverage for all units.
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">เพิ่มบันทึกการเงินรายหน่วยบริการ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleCreate}>
-                <Field label="ปีงบประมาณ">
-                  <select
-                    value={selectedYear}
-                    onChange={(event) => setSelectedYear(event.target.value)}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">เลือกปีงบประมาณ</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="หน่วยบริการ">
-                  <select
-                    value={form.healthUnitId}
-                    onChange={(event) => setForm((current) => ({ ...current, healthUnitId: event.target.value }))}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">เลือกหน่วยบริการ</option>
-                    {units.map((unit) => (
-                      <option key={unit.id} value={unit.id}>
-                        {unit.code} - {unit.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="งวดเดือน">
-                  <select
-                    value={form.fiscalPeriodId}
-                    onChange={(event) => setForm((current) => ({ ...current, fiscalPeriodId: event.target.value }))}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">เลือกงวดเดือน</option>
-                    {periodsForSelectedYear.map((period) => (
-                      <option key={period.id} value={period.id}>
-                        {period.monthNameTh} / ไตรมาส {period.quarter} / {period.fiscalYear}
-                      </option>
-                    ))}
-                  </select>
-                  {!periodsForSelectedYear.length ? (
-                    <p className="text-xs text-muted-foreground">ยังไม่มีงวดเดือนในปีงบประมาณที่เลือก</p>
-                  ) : null}
-                </Field>
-
-                <BreakdownEditor
-                  title="รายการรายได้"
-                  description="เลือกชื่อรายได้จากรายการที่มีอยู่ หรือพิมพ์ชื่อใหม่ได้"
-                  lines={form.incomeLines}
-                  options={incomeOptions}
-                  total={createIncomeTotal}
-                  listId="income-account-options"
-                  onAdd={() => addLine("incomeLines")}
-                  onChange={(id, field, value) => setLineValue("incomeLines", id, field, value)}
-                  onRemove={(id) => removeLine("incomeLines", id)}
-                />
-
-                <BreakdownEditor
-                  title="รายการรายจ่าย"
-                  description="เลือกชื่อรายจ่ายจากรายการที่มีอยู่ หรือพิมพ์ชื่อใหม่ได้"
-                  lines={form.expenseLines}
-                  options={expenseOptions}
-                  total={createExpenseTotal}
-                  listId="expense-account-options"
-                  onAdd={() => addLine("expenseLines")}
-                  onChange={(id, field, value) => setLineValue("expenseLines", id, field, value)}
-                  onRemove={(id) => removeLine("expenseLines", id)}
-                />
-
-                <Field label="ผู้บันทึก">
-                  <Input value={form.recorder} onChange={(event) => setForm((current) => ({ ...current, recorder: event.target.value }))} />
-                </Field>
-                <Field label="หมายเหตุ">
-                  <textarea
-                    value={form.notes}
-                    onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                    rows={3}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  />
-                </Field>
-                <Button type="submit" className="w-full" disabled={isSaving || !form.healthUnitId || !form.fiscalPeriodId}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {isSaving ? "กำลังบันทึก..." : "บันทึกการเงินรายหน่วยบริการ"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
+      {importPreview ? (
         <Card>
-          <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle className="text-xl">จัดการการเงินรายหน่วยบริการ</CardTitle>
-              <CardDescription>ค้นหา แก้ไข และลบบันทึกรายรับรายจ่ายของแต่ละหน่วยบริการ</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหารหัส ชื่อหน่วยบริการ หรือเดือน" className="w-full md:w-72" />
-              <Button variant="outline" size="icon" onClick={() => void loadRecords()} disabled={isLoading}>
-                <RefreshCcw className="h-4 w-4" />
-              </Button>
-            </div>
+          <CardHeader>
+            <CardTitle>ผลตรวจสอบก่อนนำเข้า</CardTitle>
+            <CardDescription>
+              ตรวจสอบแล้ว {importPreview.processedFiles} ไฟล์ พร้อมนำเข้า {importPreview.readyCount} รายการ พบปัญหา {importPreview.issueCount} รายการ
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
                 <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">หน่วยบริการ</th>
-                    <th className="pb-3 font-medium">งวด</th>
-                    <th className="pb-3 font-medium text-right">รายรับ</th>
-                    <th className="pb-3 font-medium text-right">รายจ่าย</th>
-                    <th className="pb-3 font-medium text-right">คงเหลือ</th>
-                    <th className="pb-3 font-medium">ผู้บันทึก</th>
-                    <th className="pb-3 font-medium text-right">จัดการ</th>
+                  <tr className="border-b bg-muted/50 text-left">
+                    <th className="px-4 py-3 font-medium">รหัสอ้างอิง</th>
+                    <th className="px-4 py-3 font-medium">หน่วยบริการ</th>
+                    <th className="px-4 py-3 font-medium">งวด</th>
+                    <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
+                    <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
+                    <th className="px-4 py-3 font-medium">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRecords.map((record) => (
-                    <tr key={record.id} className="border-b last:border-b-0">
-                      <td className="py-4">
-                        <div className="font-medium">{record.unitCode}</div>
-                        <div className="text-muted-foreground">{record.unitName}</div>
+                  {importPreview.items.map((item) => (
+                    <tr key={`${item.sourceCode}-${item.unitCode}-${item.month}`} className="border-b last:border-b-0">
+                      <td className="px-4 py-3">{item.sourceCode}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{item.unitCode}</div>
+                        <div className="text-muted-foreground">{item.unitName}</div>
                       </td>
-                      <td className="py-4 text-muted-foreground">
-                        {record.monthNameTh} {record.fiscalYear}
+                      <td className="px-4 py-3">
+                        เดือน {item.month} / {item.fiscalYear}
                       </td>
-                      <td className="py-4 text-right">{formatAmount(record.income)}</td>
-                      <td className="py-4 text-right">{formatAmount(record.expense)}</td>
-                      <td className="py-4 text-right">{formatAmount(record.balance)}</td>
-                      <td className="py-4 text-muted-foreground">{record.recorder || "-"}</td>
-                      <td className="py-4">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(record)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            แก้ไข
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => void handleDelete(record)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            ลบ
-                          </Button>
-                        </div>
+                      <td className="px-4 py-3 text-right">{formatAmount(item.income)}</td>
+                      <td className="px-4 py-3 text-right">{formatAmount(item.expense)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${item.status === "ready" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                          {previewStatusLabel(item.status)}
+                        </span>
+                        {item.reason ? <p className="mt-1 text-xs text-muted-foreground">{item.reason}</p> : null}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {!isLoading && filteredRecords.length === 0 ? (
-              <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">ไม่พบข้อมูลการเงินตามเงื่อนไขที่ค้นหา</div>
-            ) : null}
           </CardContent>
         </Card>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-4">
+        <SummaryCard label="ยกยอดมา (สุทธิ)" value={formatAmount(totals.opening)} />
+        <SummaryCard label="เดบิตระหว่างเดือน" value={formatAmount(totals.movementDebit)} />
+        <SummaryCard label="เครดิตระหว่างเดือน" value={formatAmount(totals.movementCredit)} />
+        <SummaryCard label="ยกยอดไป (สุทธิ)" value={formatAmount(totals.closing)} />
       </div>
 
-      <Dialog open={Boolean(editingRecord)} onOpenChange={(open) => (!open ? setEditingRecord(null) : null)}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>แก้ไขข้อมูลการเงิน</DialogTitle>
-            <DialogDescription>ปรับรายการรายได้ รายจ่าย ผู้บันทึก และหมายเหตุของรายการที่มีอยู่</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdate}>
-            <Field label="หน่วยบริการ">
-              <Input value={editingRecord ? `${editingRecord.unitCode} - ${editingRecord.unitName}` : ""} disabled />
-            </Field>
-            <Field label="งวดเดือน">
-              <Input value={editingRecord ? `${editingRecord.monthNameTh} ${editingRecord.fiscalYear}` : ""} disabled />
-            </Field>
+      <Card>
+        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>สถานะการส่งงบทดลองรายเดือน</CardTitle>
+            <CardDescription>
+              ติดตามว่าทั้ง {units.length} แห่งส่งงบทดลองเข้ามาครบหรือยังสำหรับงวด {formatMonthLabel(selectedMonthPeriod)}
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="icon" onClick={() => void loadRecords()} disabled={isLoading}>
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-3 font-medium">หน่วยบริการ</th>
+                  <th className="pb-3 font-medium">สถานะ</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="pb-3 text-right font-medium">เดบิตระหว่างเดือน</th>
+                  <th className="pb-3 text-right font-medium">เครดิตระหว่างเดือน</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไป</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyImportRows.map((row) => (
+                  <tr key={row.id} className="border-b last:border-b-0">
+                    <td className="py-4">
+                      <div className="font-medium">{row.code}</div>
+                      <div className="text-muted-foreground">{row.name}</div>
+                    </td>
+                    <td className="py-4">
+                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${row.status === "imported" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                        {row.status === "imported" ? "นำเข้าแล้ว" : "รอส่ง"}
+                      </span>
+                    </td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(getNetOpening(row.record)) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.movementDebit) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.movementCredit) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(getNetClosing(row.record)) : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-            <BreakdownEditor
-              title="รายการรายได้"
-              description="แก้ไขรายการรายได้ของงวดนี้"
-              lines={editForm.incomeLines}
-              options={incomeOptions}
-              total={editIncomeTotal}
-              listId="income-account-options"
-              onAdd={() => addEditLine("incomeLines")}
-              onChange={(id, field, value) => setEditLineValue("incomeLines", id, field, value)}
-              onRemove={(id) => removeEditLine("incomeLines", id)}
-            />
+      <Card>
+        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>ข้อมูลงบทดลองที่นำเข้าแล้ว</CardTitle>
+            <CardDescription>ค้นหา ตรวจสอบ และลบรายการนำเข้าที่ไม่ถูกต้องได้จากตารางนี้</CardDescription>
+          </div>
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="ค้นหารหัสหน่วยบริการ ชื่อหน่วยบริการ อำเภอ หรือผู้บันทึก"
+            className="w-full md:w-80"
+          />
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1080px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-3 font-medium">หน่วยบริการ</th>
+                  <th className="pb-3 font-medium">งวด</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="pb-3 text-right font-medium">เดบิตระหว่างเดือน</th>
+                  <th className="pb-3 text-right font-medium">เครดิตระหว่างเดือน</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไป</th>
+                  <th className="pb-3 font-medium">ผู้บันทึก</th>
+                  <th className="pb-3 text-right font-medium">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.map((record) => (
+                  <tr key={record.id} className="border-b last:border-b-0">
+                    <td className="py-4">
+                      <div className="font-medium">{record.unitCode}</div>
+                      <div className="text-muted-foreground">{record.unitName}</div>
+                    </td>
+                    <td className="py-4 text-muted-foreground">
+                      {record.monthNameTh} {record.fiscalYear}
+                    </td>
+                    <td className="py-4 text-right">{formatAmount(getNetOpening(record))}</td>
+                    <td className="py-4 text-right">{formatAmount(record.movementDebit)}</td>
+                    <td className="py-4 text-right">{formatAmount(record.movementCredit)}</td>
+                    <td className="py-4 text-right">{formatAmount(getNetClosing(record))}</td>
+                    <td className="py-4 text-muted-foreground">{record.recorder || "-"}</td>
+                    <td className="py-4">
+                      <div className="flex justify-end gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href="/finance/list">เปิดรายการ</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => void handleDelete(record)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          ลบ
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!isLoading && filteredRecords.length === 0 ? (
+            <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+              ไม่พบข้อมูลงบทดลองตามเงื่อนไขที่ค้นหา
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
-            <BreakdownEditor
-              title="รายการรายจ่าย"
-              description="แก้ไขรายการรายจ่ายของงวดนี้"
-              lines={editForm.expenseLines}
-              options={expenseOptions}
-              total={editExpenseTotal}
-              listId="expense-account-options"
-              onAdd={() => addEditLine("expenseLines")}
-              onChange={(id, field, value) => setEditLineValue("expenseLines", id, field, value)}
-              onRemove={(id) => removeEditLine("expenseLines", id)}
-            />
-
-            <Field label="ผู้บันทึก">
-              <Input value={editForm.recorder} onChange={(event) => setEditForm((current) => ({ ...current, recorder: event.target.value }))} />
-            </Field>
-            <Field label="หมายเหตุ">
-              <textarea
-                value={editForm.notes}
-                onChange={(event) => setEditForm((current) => ({ ...current, notes: event.target.value }))}
-                rows={3}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-            </Field>
-
-            {editingRecord ? (
-              <div className="rounded-xl border bg-muted/20 p-4">
-                <p className="mb-3 text-sm font-medium">รายชื่อรายได้เดิมที่มีอยู่ในรายการนี้</p>
-                <div className="max-h-56 overflow-y-auto rounded-lg border bg-background">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-background">
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="px-3 py-2 font-medium">Accountname</th>
-                        <th className="px-3 py-2 text-right font-medium">ยอด</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {breakdownEntries(editingRecord.incomeBreakdown).map(([name, amount]) => (
-                        <tr key={name} className="border-b last:border-b-0">
-                          <td className="px-3 py-2">{name}</td>
-                          <td className="px-3 py-2 text-right">{formatAmount(amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      {lastImport ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>ผลการนำเข้าล่าสุด</CardTitle>
+            <CardDescription>
+              ประมวลผล {lastImport.processedFiles} ไฟล์ เพิ่มใหม่ {lastImport.imported} รายการ อัปเดต {lastImport.updated} รายการ และข้าม {lastImport.skipped} รายการ
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {lastImport.detectedUnits.length > 0 ? (
+              <div>
+                <p className="mb-2 text-sm font-medium">หน่วยบริการที่ตรวจพบ</p>
+                <div className="flex flex-wrap gap-2">
+                  {lastImport.detectedUnits.map((item) => (
+                    <span key={item} className="rounded-full border px-3 py-1 text-xs">
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
             ) : null}
 
-            <DialogFooter className="border-t bg-background pt-4">
-              <Button type="button" variant="outline" onClick={() => setEditingRecord(null)}>
-                ยกเลิก
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={Boolean(editingAccount)} onOpenChange={(open) => (!open ? setEditingAccount(null) : null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>แก้ไข master รายการการเงิน</DialogTitle>
-            <DialogDescription>ปรับประเภท ชื่อรายการ ลำดับ และสถานะการใช้งาน</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdateAccount}>
-            <Field label="ประเภท">
-              <select
-                value={editAccountForm.type}
-                onChange={(event) => setEditAccountForm((current) => ({ ...current, type: event.target.value as "income" | "expense" }))}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              >
-                <option value="income">รายได้</option>
-                <option value="expense">รายจ่าย</option>
-              </select>
-            </Field>
-            <Field label="รหัสบัญชี">
-              <Input value={editAccountForm.accountCode} onChange={(event) => setEditAccountForm((current) => ({ ...current, accountCode: event.target.value }))} placeholder="เช่น 4404040101.001" />
-            </Field>
-            <Field label="ชื่อรายการ">
-              <Input value={editAccountForm.nameTh} onChange={(event) => setEditAccountForm((current) => ({ ...current, nameTh: event.target.value }))} />
-            </Field>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="ลำดับ">
-                <Input value={editAccountForm.displayOrder} onChange={(event) => setEditAccountForm((current) => ({ ...current, displayOrder: event.target.value }))} />
-              </Field>
-              <Field label="สถานะ">
-                <select
-                  value={editAccountForm.isActive ? "active" : "inactive"}
-                  onChange={(event) => setEditAccountForm((current) => ({ ...current, isActive: event.target.value === "active" }))}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="active">ใช้งาน</option>
-                  <option value="inactive">ปิดใช้งาน</option>
-                </select>
-              </Field>
-            </div>
-            <DialogFooter className="border-t bg-background pt-4">
-              <Button type="button" variant="outline" onClick={() => setEditingAccount(null)}>
-                ยกเลิก
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function BreakdownEditor({
-  title,
-  description,
-  lines,
-  options,
-  total,
-  listId,
-  onAdd,
-  onChange,
-  onRemove,
-}: {
-  title: string;
-  description: string;
-  lines: BreakdownLine[];
-  options: string[];
-  total: number;
-  listId: string;
-  onAdd: () => void;
-  onChange: (id: string, field: "name" | "amount", value: string) => void;
-  onRemove: (id: string) => void;
-}) {
-  return (
-    <div className="rounded-xl border p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">ยอดรวม</p>
-          <p className="text-sm font-semibold">{formatAmount(total)}</p>
-        </div>
-      </div>
-
-      <div className="max-h-[40vh] space-y-3 overflow-y-auto pr-1">
-        {lines.map((line) => (
-          <div key={line.id} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px_92px]">
-            <div>
-              <Input
-                list={listId}
-                value={line.name}
-                onChange={(event) => onChange(line.id, "name", event.target.value)}
-                placeholder={options.length > 0 ? options[0] : "ชื่อรายการ"}
-              />
-            </div>
-            <div>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={line.amount}
-                onChange={(event) => onChange(line.id, "amount", event.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-            <Button type="button" variant="outline" onClick={() => onRemove(line.id)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              ลบ
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <Button type="button" variant="outline" className="mt-3 w-full" onClick={onAdd}>
-        <Plus className="mr-2 h-4 w-4" />
-        เพิ่มรายการ
-      </Button>
+            {lastImport.issues.length > 0 ? (
+              <div>
+                <p className="mb-2 text-sm font-medium">รายการที่มีปัญหา</p>
+                <div className="space-y-2">
+                  {lastImport.issues.map((issue, index) => (
+                    <div key={`${issue.sourceCode}-${index}`} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      {issue.sourceCode} / {issue.unitCode || "-"} / เดือน {issue.month ?? "-"} : {issue.reason}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

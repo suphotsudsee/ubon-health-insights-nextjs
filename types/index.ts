@@ -59,6 +59,13 @@ export interface CreateFinanceRecordInput {
   expense: number
   incomeBreakdown?: Record<string, number>
   expenseBreakdown?: Record<string, number>
+  openingDebit?: number
+  openingCredit?: number
+  movementDebit?: number
+  movementCredit?: number
+  closingDebit?: number
+  closingCredit?: number
+  trialBalanceRows?: Array<Record<string, unknown>>
   notes?: string
   recorder?: string
 }
@@ -68,6 +75,13 @@ export interface UpdateFinanceRecordInput {
   expense?: number
   incomeBreakdown?: Record<string, number>
   expenseBreakdown?: Record<string, number>
+  openingDebit?: number
+  openingCredit?: number
+  movementDebit?: number
+  movementCredit?: number
+  closingDebit?: number
+  closingCredit?: number
+  trialBalanceRows?: Array<Record<string, unknown>>
   notes?: string
   recorder?: string
 }
@@ -155,6 +169,13 @@ export interface FinanceRecordWithRelations {
   balance: number
   incomeBreakdown: Record<string, number> | null
   expenseBreakdown: Record<string, number> | null
+  openingDebit: number
+  openingCredit: number
+  movementDebit: number
+  movementCredit: number
+  closingDebit: number
+  closingCredit: number
+  trialBalanceRows: Array<Record<string, unknown>> | null
   notes: string | null
   recorder: string | null
   submittedAt: Date | null

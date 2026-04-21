@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Download, Eye, LayoutDashboard, MinusCircle, PlusCircle, RefreshCcw, Trash2 } from "lucide-react";
+import { Download, Eye, LayoutDashboard, RefreshCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+type TrialBalanceRow = {
+  accountCode?: string;
+  accountName?: string;
+  openingDebit?: number;
+  openingCredit?: number;
+  movementDebit?: number;
+  movementCredit?: number;
+  closingDebit?: number;
+  closingCredit?: number;
+};
 
 type RecordItem = {
   id: number;
@@ -29,6 +40,13 @@ type RecordItem = {
   balance: number;
   incomeBreakdown: Record<string, number> | null;
   expenseBreakdown: Record<string, number> | null;
+  openingDebit: number;
+  openingCredit: number;
+  movementDebit: number;
+  movementCredit: number;
+  closingDebit: number;
+  closingCredit: number;
+  trialBalanceRows: TrialBalanceRow[] | null;
   notes: string | null;
   recorder: string | null;
   createdAt: string;
@@ -60,7 +78,7 @@ function formatCurrency(value: number) {
     style: "currency",
     currency: "THB",
     minimumFractionDigits: 2,
-  }).format(value);
+  }).format(value || 0);
 }
 
 function formatDateTime(value: string) {
@@ -68,6 +86,14 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function getNetOpening(record: RecordItem) {
+  return (record.openingDebit || 0) - (record.openingCredit || 0);
+}
+
+function getNetClosing(record: RecordItem) {
+  return (record.closingDebit || 0) - (record.closingCredit || 0);
 }
 
 export default function FinanceListPage() {
@@ -81,7 +107,6 @@ export default function FinanceListPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
   const [filters, setFilters] = useState({
-    type: "all",
     fiscalYear: "",
     districtId: "",
     healthUnitId: "",
@@ -111,7 +136,7 @@ export default function FinanceListPage() {
           periodRes.json(),
         ]);
 
-        if (!recordRes.ok) throw new Error(recordBody.error || "โหลดรายการข้อมูลไม่สำเร็จ");
+        if (!recordRes.ok) throw new Error(recordBody.error || "โหลดรายการงบทดลองไม่สำเร็จ");
         if (!districtRes.ok) throw new Error(districtBody.error || "โหลดอำเภอไม่สำเร็จ");
         if (!unitRes.ok) throw new Error(unitBody.error || "โหลดหน่วยบริการไม่สำเร็จ");
         if (!periodRes.ok) throw new Error(periodBody.error || "โหลดงวดข้อมูลไม่สำเร็จ");
@@ -133,7 +158,7 @@ export default function FinanceListPage() {
         }));
       } catch (loadError) {
         if (!mounted) return;
-        setError(loadError instanceof Error ? loadError.message : "โหลดข้อมูลไม่สำเร็จ");
+        setError(loadError instanceof Error ? loadError.message : "โหลดข้อมูลงบทดลองไม่สำเร็จ");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -157,11 +182,6 @@ export default function FinanceListPage() {
     const keyword = filters.keyword.trim().toLowerCase();
 
     return records.filter((record) => {
-      const matchesType =
-        filters.type === "all" ||
-        (filters.type === "income" && record.income > 0) ||
-        (filters.type === "expense" && record.expense > 0);
-
       const matchesYear = !filters.fiscalYear || String(record.fiscalYear) === filters.fiscalYear;
       const matchesDistrict = !filters.districtId || filteredUnits.some((unit) => unit.id === record.healthUnitId);
       const matchesUnit = !filters.healthUnitId || String(record.healthUnitId) === filters.healthUnitId;
@@ -174,7 +194,7 @@ export default function FinanceListPage() {
         (record.recorder || "").toLowerCase().includes(keyword) ||
         (record.notes || "").toLowerCase().includes(keyword);
 
-      return matchesType && matchesYear && matchesDistrict && matchesUnit && matchesMonth && matchesKeyword;
+      return matchesYear && matchesDistrict && matchesUnit && matchesMonth && matchesKeyword;
     });
   }, [filteredUnits, filters, records]);
 
@@ -187,19 +207,19 @@ export default function FinanceListPage() {
       const body = await response.json();
 
       if (!response.ok) {
-        throw new Error(body.error || "โหลดรายการข้อมูลไม่สำเร็จ");
+        throw new Error(body.error || "โหลดรายการงบทดลองไม่สำเร็จ");
       }
 
       setRecords((body.records || []) as RecordItem[]);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "โหลดรายการข้อมูลไม่สำเร็จ");
+      setError(loadError instanceof Error ? loadError.message : "โหลดรายการงบทดลองไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDelete(record: RecordItem) {
-    if (!window.confirm(`ยืนยันการลบข้อมูลการเงินของ ${record.unitName} เดือน ${record.monthNameTh} ${record.fiscalYear} ?`)) {
+    if (!window.confirm(`ยืนยันการลบงบทดลองของ ${record.unitName} เดือน ${record.monthNameTh} ${record.fiscalYear} ?`)) {
       return;
     }
 
@@ -212,14 +232,14 @@ export default function FinanceListPage() {
       const body = await response.json();
 
       if (!response.ok) {
-        throw new Error(body.error || "ลบข้อมูลไม่สำเร็จ");
+        throw new Error(body.error || "ลบข้อมูลงบทดลองไม่สำเร็จ");
       }
 
       setRecords((current) => current.filter((item) => item.id !== record.id));
       setSelectedRecord((current) => (current?.id === record.id ? null : current));
-      setMessage("ลบข้อมูลการเงินเรียบร้อยแล้ว");
+      setMessage("ลบข้อมูลงบทดลองเรียบร้อยแล้ว");
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "ลบข้อมูลไม่สำเร็จ");
+      setError(deleteError instanceof Error ? deleteError.message : "ลบข้อมูลงบทดลองไม่สำเร็จ");
     } finally {
       setDeletingId(null);
     }
@@ -229,22 +249,12 @@ export default function FinanceListPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-primary">รายการข้อมูลการเงิน</h1>
-          <p className="text-muted-foreground">แสดงข้อมูลการเงินที่บันทึกในระบบปัจจุบัน พร้อมตัวกรองและการลบในระดับ record รายเดือน</p>
+          <h1 className="text-3xl font-bold text-primary">รายการงบทดลอง</h1>
+          <p className="text-muted-foreground">
+            แสดงข้อมูลตั้งต้นจากไฟล์งบทดลองรายเดือน โดยยึดยอดยกมา รายการระหว่างเดือน และยอดยกไปเป็นแกนหลักของงานการเงิน
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href="/finance/income/create">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              เพิ่มรายรับ
-            </Link>
-          </Button>
-          <Button asChild variant="secondary">
-            <Link href="/finance/expense/create">
-              <MinusCircle className="mr-2 h-4 w-4" />
-              เพิ่มรายจ่าย
-            </Link>
-          </Button>
           <Button variant="outline" disabled>
             <Download className="mr-2 h-4 w-4" />
             Export Excel
@@ -255,23 +265,10 @@ export default function FinanceListPage() {
       <Card>
         <CardHeader>
           <CardTitle>ตัวกรองข้อมูล</CardTitle>
-          <CardDescription>กรองตามประเภท ปีงบประมาณ อำเภอ หน่วยบริการ เดือน และคำค้นหา</CardDescription>
+          <CardDescription>กรองตามปีงบประมาณ อำเภอ หน่วยบริการ เดือน และคำค้นหา</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">ประเภท</label>
-              <select
-                value={filters.type}
-                onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="all">ทั้งหมด</option>
-                <option value="income">รายรับ</option>
-                <option value="expense">รายจ่าย</option>
-              </select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium">ปีงบประมาณ</label>
               <select
@@ -336,7 +333,7 @@ export default function FinanceListPage() {
               </select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 xl:col-span-2">
               <label className="text-sm font-medium">คำค้นหา</label>
               <Input
                 value={filters.keyword}
@@ -356,7 +353,6 @@ export default function FinanceListPage() {
               variant="outline"
               onClick={() =>
                 setFilters({
-                  type: "all",
                   fiscalYear: filters.fiscalYear,
                   districtId: "",
                   healthUnitId: "",
@@ -382,79 +378,75 @@ export default function FinanceListPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>รายการข้อมูล</CardTitle>
+          <CardTitle>ข้อมูลงบทดลอง</CardTitle>
           <CardDescription>
             {loading ? "กำลังโหลดข้อมูล..." : `พบ ${filteredRecords.length} รายการ`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-sm">
+            <table className="w-full min-w-[1200px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
                   <th className="px-4 py-3 font-medium">วันที่บันทึก</th>
-                  <th className="px-4 py-3 font-medium">ประเภท</th>
                   <th className="px-4 py-3 font-medium">งวดข้อมูล</th>
                   <th className="px-4 py-3 font-medium">หน่วยบริการ</th>
                   <th className="px-4 py-3 font-medium">อำเภอ</th>
-                  <th className="px-4 py-3 text-right font-medium">รายรับ</th>
-                  <th className="px-4 py-3 text-right font-medium">รายจ่าย</th>
-                  <th className="px-4 py-3 text-right font-medium">คงเหลือ</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
+                  <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปสุทธิ</th>
                   <th className="px-4 py-3 font-medium">ผู้บันทึก</th>
                   <th className="px-4 py-3 text-right font-medium">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRecords.map((record) => {
-                  const rowType = record.income > 0 && record.expense > 0 ? "รายรับ/รายจ่าย" : record.income > 0 ? "รายรับ" : "รายจ่าย";
-
-                  return (
-                    <tr key={record.id} className="border-b last:border-b-0 hover:bg-muted/20">
-                      <td className="px-4 py-3">{formatDateTime(record.createdAt)}</td>
-                      <td className="px-4 py-3">{rowType}</td>
-                      <td className="px-4 py-3">
-                        {record.monthNameTh} {record.fiscalYear}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{record.unitCode}</div>
-                        <div className="text-muted-foreground">{record.unitName}</div>
-                      </td>
-                      <td className="px-4 py-3">{record.amphoeName}</td>
-                      <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(record.income)}</td>
-                      <td className="px-4 py-3 text-right text-rose-700">{formatCurrency(record.expense)}</td>
-                      <td className="px-4 py-3 text-right font-medium">{formatCurrency(record.balance)}</td>
-                      <td className="px-4 py-3">{record.recorder || "-"}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => setSelectedRecord(record)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            ดู
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => void handleDelete(record)} disabled={deletingId === record.id}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {deletingId === record.id ? "กำลังลบ..." : "ลบ"}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredRecords.map((record) => (
+                  <tr key={record.id} className="border-b last:border-b-0 hover:bg-muted/20">
+                    <td className="px-4 py-3">{formatDateTime(record.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      {record.monthNameTh} {record.fiscalYear}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{record.unitCode}</div>
+                      <div className="text-muted-foreground">{record.unitName}</div>
+                    </td>
+                    <td className="px-4 py-3">{record.amphoeName}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(getNetOpening(record))}</td>
+                    <td className="px-4 py-3 text-right text-rose-700">{formatCurrency(record.movementDebit)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(record.movementCredit)}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(getNetClosing(record))}</td>
+                    <td className="px-4 py-3">{record.recorder || "-"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setSelectedRecord(record)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          ดู
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => void handleDelete(record)} disabled={deletingId === record.id}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {deletingId === record.id ? "กำลังลบ..." : "ลบ"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
           {!loading && filteredRecords.length === 0 ? (
             <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-              ไม่พบข้อมูลการเงินตามเงื่อนไขที่เลือก
+              ไม่พบข้อมูลงบทดลองตามเงื่อนไขที่เลือก
             </div>
           ) : null}
         </CardContent>
       </Card>
 
       <Dialog open={Boolean(selectedRecord)} onOpenChange={(open) => (!open ? setSelectedRecord(null) : null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>รายละเอียดข้อมูลการเงิน</DialogTitle>
+            <DialogTitle>รายละเอียดงบทดลอง</DialogTitle>
             <DialogDescription>
               {selectedRecord ? `${selectedRecord.unitName} เดือน ${selectedRecord.monthNameTh} ปี ${selectedRecord.fiscalYear}` : ""}
             </DialogDescription>
@@ -462,48 +454,97 @@ export default function FinanceListPage() {
 
           {selectedRecord ? (
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">รายรับรวม</p>
-                  <p className="mt-1 text-xl font-semibold text-emerald-700">{formatCurrency(selectedRecord.income)}</p>
+                  <p className="text-sm text-muted-foreground">ยกยอดมา</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(getNetOpening(selectedRecord))}</p>
                 </div>
                 <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">รายจ่ายรวม</p>
-                  <p className="mt-1 text-xl font-semibold text-rose-700">{formatCurrency(selectedRecord.expense)}</p>
+                  <p className="text-sm text-muted-foreground">เดบิตระหว่างเดือน</p>
+                  <p className="mt-1 text-xl font-semibold text-rose-700">{formatCurrency(selectedRecord.movementDebit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">เครดิตระหว่างเดือน</p>
+                  <p className="mt-1 text-xl font-semibold text-emerald-700">{formatCurrency(selectedRecord.movementCredit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">ยกยอดไปสุทธิ</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(getNetClosing(selectedRecord))}</p>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-lg border p-4">
-                  <p className="mb-3 text-sm font-medium">หมวดรายรับ</p>
-                  <div className="space-y-2 text-sm">
-                    {Object.entries(selectedRecord.incomeBreakdown || {}).map(([name, amount]) => (
-                      <div key={name} className="flex items-center justify-between">
-                        <span>{name}</span>
-                        <span>{formatCurrency(Number(amount))}</span>
-                      </div>
-                    ))}
-                    {Object.keys(selectedRecord.incomeBreakdown || {}).length === 0 ? <p className="text-muted-foreground">ไม่มีรายการ</p> : null}
-                  </div>
+                  <p className="text-sm text-muted-foreground">เดบิตยกมา</p>
+                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.openingDebit)}</p>
                 </div>
-
                 <div className="rounded-lg border p-4">
-                  <p className="mb-3 text-sm font-medium">หมวดรายจ่าย</p>
-                  <div className="space-y-2 text-sm">
-                    {Object.entries(selectedRecord.expenseBreakdown || {}).map(([name, amount]) => (
-                      <div key={name} className="flex items-center justify-between">
-                        <span>{name}</span>
-                        <span>{formatCurrency(Number(amount))}</span>
-                      </div>
-                    ))}
-                    {Object.keys(selectedRecord.expenseBreakdown || {}).length === 0 ? <p className="text-muted-foreground">ไม่มีรายการ</p> : null}
-                  </div>
+                  <p className="text-sm text-muted-foreground">เครดิตยกมา</p>
+                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.openingCredit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">เดบิตยกไป</p>
+                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.closingDebit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">เครดิตยกไป</p>
+                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.closingCredit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">ผู้บันทึก</p>
+                  <p className="mt-1 font-medium">{selectedRecord.recorder || "-"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">ปรับปรุงล่าสุด</p>
+                  <p className="mt-1 font-medium">{formatDateTime(selectedRecord.updatedAt)}</p>
                 </div>
               </div>
 
               <div className="rounded-lg border p-4">
                 <p className="mb-2 text-sm font-medium">หมายเหตุ</p>
                 <pre className="whitespace-pre-wrap text-sm text-muted-foreground">{selectedRecord.notes || "-"}</pre>
+              </div>
+
+              <div className="rounded-lg border">
+                <div className="border-b px-4 py-3">
+                  <p className="font-medium">รายละเอียดบัญชีจากงบทดลอง</p>
+                  <p className="text-sm text-muted-foreground">
+                    แสดงยอดยกมา รายการระหว่างเดือน และยอดยกไปในระดับบัญชี
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1100px] text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40 text-left">
+                        <th className="px-4 py-3 font-medium">รหัสบัญชี</th>
+                        <th className="px-4 py-3 font-medium">ชื่อบัญชี</th>
+                        <th className="px-4 py-3 text-right font-medium">เดบิตยกมา</th>
+                        <th className="px-4 py-3 text-right font-medium">เครดิตยกมา</th>
+                        <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
+                        <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
+                        <th className="px-4 py-3 text-right font-medium">เดบิตยกไป</th>
+                        <th className="px-4 py-3 text-right font-medium">เครดิตยกไป</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedRecord.trialBalanceRows || []).map((row, index) => (
+                        <tr key={`${row.accountCode || "row"}-${index}`} className="border-b last:border-b-0">
+                          <td className="px-4 py-3">{row.accountCode || "-"}</td>
+                          <td className="px-4 py-3">{row.accountName || "-"}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.openingDebit || 0))}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.openingCredit || 0))}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.movementDebit || 0))}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.movementCredit || 0))}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.closingDebit || 0))}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(Number(row.closingCredit || 0))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {(selectedRecord.trialBalanceRows || []).length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">ไม่มีรายละเอียดบัญชีในรายการนี้</div>
+                ) : null}
               </div>
             </div>
           ) : null}

@@ -1,8 +1,18 @@
 ﻿import * as XLSX from "xlsx";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { syncFinanceAccountsFromBreakdown } from "@/actions/finance-accounts";
 
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
+
 type FinanceSheetKind = "income" | "expense";
+type WorkbookKind = "summary" | "expense-document" | "trial-balance" | "unknown";
 
 type ParsedFinanceGroup = {
   sourceCode: string;
@@ -23,6 +33,13 @@ type ParsedFinanceDocumentGroup = {
   expense: number;
   incomeBreakdown: Record<string, number>;
   expenseBreakdown: Record<string, number>;
+  openingDebit: number;
+  openingCredit: number;
+  movementDebit: number;
+  movementCredit: number;
+  closingDebit: number;
+  closingCredit: number;
+  trialBalanceRows?: Array<Record<string, unknown>>;
   fileNames: string[];
 };
 
@@ -192,7 +209,7 @@ function findDocumentMonth(rows: unknown[][]) {
   return null;
 }
 
-function detectWorkbookKind(buffer: Buffer): "summary" | "expense-document" | "unknown" {
+function detectWorkbookKind(buffer: Buffer): WorkbookKind {
   const workbook = XLSX.read(buffer, { type: "buffer" });
 
   if (workbook.SheetNames.some((name) => detectSheetKind(name))) {
@@ -216,7 +233,17 @@ function detectWorkbookKind(buffer: Buffer): "summary" | "expense-document" | "u
     flattened.some((cell) => cell === "เดบิต") &&
     flattened.some((cell) => cell.includes("โรงพยาบาลส่งเสริมสุขภาพตำบล") || cell.includes("รพ.สต."));
 
-  return hasVoucherShape ? "expense-document" : "unknown";
+  if (hasVoucherShape) {
+    return "expense-document";
+  }
+
+  const hasTrialBalanceShape =
+    flattened.some((cell) => cell.includes("งบทดลอง")) &&
+    flattened.some((cell) => cell === "ชื่อบัญชี") &&
+    flattened.some((cell) => cell === "รหัสบัญชี") &&
+    flattened.some((cell) => cell === "รายการระหว่างเดือน");
+
+  return hasTrialBalanceShape ? "trial-balance" : "unknown";
 }
 
 function parsePcuCode(rawValue: unknown) {
@@ -376,6 +403,12 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
             expense,
             incomeBreakdown,
             expenseBreakdown,
+            openingDebit: 0,
+            openingCredit: 0,
+            movementDebit: expense,
+            movementCredit: income,
+            closingDebit: 0,
+            closingCredit: 0,
             fileNames: [fileName],
           }
         : null,
@@ -393,14 +426,147 @@ export function parseExpenseDocumentWorkbook(buffer: Buffer, fileName: string) {
   };
 }
 
-async function importExpenseDocumentFiles(
+export function parseTrialBalanceWorkbook(buffer: Buffer, fileName: string) {
+  const workbook = XLSX.read(buffer, { type: "buffer" });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
+    header: 1,
+    blankrows: false,
+    defval: "",
+  });
+
+  const unitName = findDocumentUnitName(rows);
+  const normalizedUnitName = normalizeUnitName(unitName);
+  const month = findDocumentMonth(rows);
+  const sourceCode = fileName;
+  const incomeBreakdown: Record<string, number> = {};
+  const expenseBreakdown: Record<string, number> = {};
+  const trialBalanceRows: Array<Record<string, unknown>> = [];
+  let income = 0;
+  let expense = 0;
+  let openingDebit = 0;
+  let openingCredit = 0;
+  let movementDebit = 0;
+  let movementCredit = 0;
+  let closingDebit = 0;
+  let closingCredit = 0;
+
+  for (const row of rows) {
+    const accountName = trimCell(row[1]);
+    const accountCode = trimCell(row[3]);
+    const openingDebitValue = toNumber(row[4]);
+    const openingCreditValue = toNumber(row[5]);
+    const debit = toNumber(row[6]);
+    const credit = toNumber(row[7]);
+    const closingDebitValue = toNumber(row[8]);
+    const closingCreditValue = toNumber(row[10]);
+
+    if (!accountName || !accountCode || accountName.startsWith("รวม")) {
+      continue;
+    }
+
+    if (
+      openingDebitValue <= 0 &&
+      openingCreditValue <= 0 &&
+      debit <= 0 &&
+      credit <= 0 &&
+      closingDebitValue <= 0 &&
+      closingCreditValue <= 0
+    ) {
+      continue;
+    }
+
+    openingDebit += openingDebitValue;
+    openingCredit += openingCreditValue;
+    movementDebit += debit;
+    movementCredit += credit;
+    closingDebit += closingDebitValue;
+    closingCredit += closingCreditValue;
+
+    trialBalanceRows.push({
+      accountName,
+      accountCode,
+      openingDebit: openingDebitValue,
+      openingCredit: openingCreditValue,
+      movementDebit: debit,
+      movementCredit: credit,
+      closingDebit: closingDebitValue,
+      closingCredit: closingCreditValue,
+    });
+
+    const debitClass = classifyVoucherEntry(accountCode, "debit");
+    const creditClass = classifyVoucherEntry(accountCode, "credit");
+    const breakdownKey = accountCode ? `${accountCode} ${accountName}` : accountName;
+
+    if (debit > 0 && debitClass.kind === "income") {
+      const signedAmount = debit * debitClass.multiplier;
+      income += signedAmount;
+      incomeBreakdown[breakdownKey] = (incomeBreakdown[breakdownKey] ?? 0) + signedAmount;
+    } else if (debit > 0 && debitClass.kind === "expense") {
+      const signedAmount = debit * debitClass.multiplier;
+      expense += signedAmount;
+      expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + signedAmount;
+    }
+
+    if (credit > 0 && creditClass.kind === "income") {
+      const signedAmount = credit * creditClass.multiplier;
+      income += signedAmount;
+      incomeBreakdown[breakdownKey] = (incomeBreakdown[breakdownKey] ?? 0) + signedAmount;
+    } else if (credit > 0 && creditClass.kind === "expense") {
+      const signedAmount = credit * creditClass.multiplier;
+      expense += signedAmount;
+      expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + signedAmount;
+    }
+  }
+
+  return {
+    record:
+      unitName && normalizedUnitName && month && (income !== 0 || expense !== 0)
+        ? {
+            sourceCode,
+            unitName,
+            normalizedUnitName,
+            month,
+            income,
+            expense,
+            incomeBreakdown,
+            expenseBreakdown,
+            openingDebit,
+            openingCredit,
+            movementDebit,
+            movementCredit,
+            closingDebit,
+            closingCredit,
+            trialBalanceRows,
+            fileNames: [fileName],
+          }
+        : null,
+    issues: [
+      ...(!unitName
+        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect unit name in file ${fileName}` }]
+        : []),
+      ...(!month
+        ? [{ sourceCode, unitCode: "", month: null, reason: `Cannot detect month in file ${fileName}` }]
+        : []),
+      ...((income === 0 && expense === 0)
+        ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect income or expense amount in file ${fileName}` }]
+        : []),
+    ] satisfies FinanceImportIssue[],
+  };
+}
+
+async function importNamedUnitFiles(
+  collected: {
+    records: ParsedFinanceDocumentGroup[];
+    issues: FinanceImportIssue[];
+  },
   files: FinanceImportFile[],
   options: {
     fiscalYear: number;
     recorder?: string;
-  }
+  },
+  sourceLabel: string
 ): Promise<FinanceImportResult> {
-  const collected = collectExpenseDocumentRecords(files);
   const records = collected.records;
   const issues: FinanceImportIssue[] = [...collected.issues];
   const months = [...new Set(records.map((record) => record.month))];
@@ -483,7 +649,7 @@ async function importExpenseDocumentFiles(
       Object.keys(record.expenseBreakdown).length > 0
         ? record.expenseBreakdown
         : ((existing?.expenseBreakdown as Record<string, number> | null) ?? {});
-    const noteSuffix = `Imported accounting documents (${record.fileNames.length} files): ${record.fileNames.join(", ")}`;
+    const noteSuffix = `Imported ${sourceLabel} (${record.fileNames.length} files): ${record.fileNames.join(", ")}`;
 
     await prisma.financeRecord.upsert({
       where: {
@@ -498,6 +664,13 @@ async function importExpenseDocumentFiles(
         incomeBreakdown: nextIncomeBreakdown,
         expenseBreakdown: nextExpenseBreakdown,
         balance: nextIncome - nextExpense,
+        openingDebit: record.openingDebit,
+        openingCredit: record.openingCredit,
+        movementDebit: record.movementDebit,
+        movementCredit: record.movementCredit,
+        closingDebit: record.closingDebit,
+        closingCredit: record.closingCredit,
+        trialBalanceRows: toInputJsonValue(record.trialBalanceRows),
         recorder: options.recorder,
         notes: noteSuffix,
       },
@@ -509,6 +682,13 @@ async function importExpenseDocumentFiles(
         balance: record.income - record.expense,
         incomeBreakdown: record.incomeBreakdown,
         expenseBreakdown: record.expenseBreakdown,
+        openingDebit: record.openingDebit,
+        openingCredit: record.openingCredit,
+        movementDebit: record.movementDebit,
+        movementCredit: record.movementCredit,
+        closingDebit: record.closingDebit,
+        closingCredit: record.closingCredit,
+        trialBalanceRows: toInputJsonValue(record.trialBalanceRows),
         recorder: options.recorder,
         notes: noteSuffix,
       },
@@ -531,6 +711,36 @@ async function importExpenseDocumentFiles(
   };
 }
 
+async function importExpenseDocumentFiles(
+  files: FinanceImportFile[],
+  options: {
+    fiscalYear: number;
+    recorder?: string;
+  }
+): Promise<FinanceImportResult> {
+  return importNamedUnitFiles(
+    collectExpenseDocumentRecords(files),
+    files,
+    options,
+    "accounting documents",
+  );
+}
+
+async function importTrialBalanceFiles(
+  files: FinanceImportFile[],
+  options: {
+    fiscalYear: number;
+    recorder?: string;
+  }
+): Promise<FinanceImportResult> {
+  return importNamedUnitFiles(
+    collectTrialBalanceRecords(files),
+    files,
+    options,
+    "trial balance files",
+  );
+}
+
 function collectExpenseDocumentRecords(files: FinanceImportFile[]) {
   const grouped = new Map<string, ParsedFinanceDocumentGroup>();
   const issues: FinanceImportIssue[] = [];
@@ -551,11 +761,86 @@ function collectExpenseDocumentRecords(files: FinanceImportFile[]) {
         expense: 0,
         incomeBreakdown: {} as Record<string, number>,
         expenseBreakdown: {} as Record<string, number>,
+        openingDebit: 0,
+        openingCredit: 0,
+        movementDebit: 0,
+        movementCredit: 0,
+        closingDebit: 0,
+        closingCredit: 0,
+        trialBalanceRows: [],
         fileNames: [],
       };
 
     current.income += parsed.record.income;
     current.expense += parsed.record.expense;
+    current.openingDebit += parsed.record.openingDebit;
+    current.openingCredit += parsed.record.openingCredit;
+    current.movementDebit += parsed.record.movementDebit;
+    current.movementCredit += parsed.record.movementCredit;
+    current.closingDebit += parsed.record.closingDebit;
+    current.closingCredit += parsed.record.closingCredit;
+    current.fileNames.push(file.name);
+
+    for (const [account, amount] of Object.entries(parsed.record.incomeBreakdown)) {
+      current.incomeBreakdown[account] = (current.incomeBreakdown[account] ?? 0) + amount;
+    }
+
+    for (const [account, amount] of Object.entries(parsed.record.expenseBreakdown)) {
+      current.expenseBreakdown[account] = (current.expenseBreakdown[account] ?? 0) + amount;
+    }
+
+    grouped.set(key, current);
+  }
+
+  return {
+    records: Array.from(grouped.values()),
+    issues,
+  };
+}
+
+function collectTrialBalanceRecords(files: FinanceImportFile[]) {
+  const grouped = new Map<string, ParsedFinanceDocumentGroup>();
+  const issues: FinanceImportIssue[] = [];
+
+  for (const file of files) {
+    const parsed = parseTrialBalanceWorkbook(file.buffer, file.name);
+    issues.push(...parsed.issues);
+
+    if (!parsed.record) {
+      continue;
+    }
+
+    const key = `${parsed.record.normalizedUnitName}:${parsed.record.month}`;
+    const current: ParsedFinanceDocumentGroup =
+      grouped.get(key) ??
+      {
+        ...parsed.record,
+        income: 0,
+        expense: 0,
+        incomeBreakdown: {} as Record<string, number>,
+        expenseBreakdown: {} as Record<string, number>,
+        openingDebit: 0,
+        openingCredit: 0,
+        movementDebit: 0,
+        movementCredit: 0,
+        closingDebit: 0,
+        closingCredit: 0,
+        trialBalanceRows: [],
+        fileNames: [],
+      };
+
+    current.income += parsed.record.income;
+    current.expense += parsed.record.expense;
+    current.openingDebit += parsed.record.openingDebit;
+    current.openingCredit += parsed.record.openingCredit;
+    current.movementDebit += parsed.record.movementDebit;
+    current.movementCredit += parsed.record.movementCredit;
+    current.closingDebit += parsed.record.closingDebit;
+    current.closingCredit += parsed.record.closingCredit;
+    current.trialBalanceRows = [
+      ...((current.trialBalanceRows as Array<Record<string, unknown>> | undefined) ?? []),
+      ...((parsed.record.trialBalanceRows as Array<Record<string, unknown>> | undefined) ?? []),
+    ];
     current.fileNames.push(file.name);
 
     for (const [account, amount] of Object.entries(parsed.record.incomeBreakdown)) {
@@ -583,6 +868,7 @@ export async function previewFinanceFiles(
 ): Promise<FinanceImportPreview> {
   const summaryFiles: FinanceImportFile[] = [];
   const expenseDocumentFiles: FinanceImportFile[] = [];
+  const trialBalanceFiles: FinanceImportFile[] = [];
   const issues: FinanceImportIssue[] = [];
   const items: FinanceImportPreviewItem[] = [];
   const detectedUnits = new Set<string>();
@@ -593,6 +879,8 @@ export async function previewFinanceFiles(
       summaryFiles.push(file);
     } else if (kind === "expense-document") {
       expenseDocumentFiles.push(file);
+    } else if (kind === "trial-balance") {
+      trialBalanceFiles.push(file);
     } else {
       issues.push({
         sourceCode: file.name,
@@ -608,8 +896,10 @@ export async function previewFinanceFiles(
     parsed: parseFinanceWorkbook(file.buffer),
   }));
   const expenseCollected = collectExpenseDocumentRecords(expenseDocumentFiles);
+  const trialBalanceCollected = collectTrialBalanceRecords(trialBalanceFiles);
   issues.push(...summaryResults.flatMap((result) => result.parsed.issues));
   issues.push(...expenseCollected.issues);
+  issues.push(...trialBalanceCollected.issues);
 
   const summaryUnitCodes = [
     ...new Set(summaryResults.flatMap((result) => result.parsed.records.map((record) => record.unitCode))),
@@ -618,8 +908,11 @@ export async function previewFinanceFiles(
     ...new Set([
       ...summaryResults.flatMap((result) => result.parsed.records.map((record) => record.month)),
       ...expenseCollected.records.map((record) => record.month),
+      ...trialBalanceCollected.records.map((record) => record.month),
     ]),
   ];
+
+  const namedRecords = [...expenseCollected.records, ...trialBalanceCollected.records];
 
   const [codedUnits, allUnits, periods] = await Promise.all([
     summaryUnitCodes.length > 0
@@ -628,7 +921,7 @@ export async function previewFinanceFiles(
           select: { id: true, code: true, name: true },
         })
       : Promise.resolve([]),
-    expenseCollected.records.length > 0
+    namedRecords.length > 0
       ? prisma.healthUnit.findMany({
           select: { id: true, code: true, name: true },
         })
@@ -691,7 +984,7 @@ export async function previewFinanceFiles(
     }
   }
 
-  for (const record of expenseCollected.records) {
+  for (const record of namedRecords) {
     const matchedUnits = unitsByNormalizedName.get(record.normalizedUnitName) ?? [];
     const period = periodMap.get(record.month);
     const status =
@@ -866,6 +1159,8 @@ export async function importFinanceWorkbook(
         balance: record.income - record.expense,
         incomeBreakdown: record.incomeBreakdown,
         expenseBreakdown: record.expenseBreakdown,
+        movementDebit: record.expense,
+        movementCredit: record.income,
         recorder: options.recorder,
         notes: `Imported from Excel source code ${record.sourceCode}`,
       },
@@ -877,6 +1172,8 @@ export async function importFinanceWorkbook(
         balance: record.income - record.expense,
         incomeBreakdown: record.incomeBreakdown,
         expenseBreakdown: record.expenseBreakdown,
+        movementDebit: record.expense,
+        movementCredit: record.income,
         recorder: options.recorder,
         notes: `Imported from Excel source code ${record.sourceCode}`,
       },
@@ -919,6 +1216,7 @@ export async function importFinanceFiles(
 
   const summaryFiles: FinanceImportFile[] = [];
   const expenseDocumentFiles: FinanceImportFile[] = [];
+  const trialBalanceFiles: FinanceImportFile[] = [];
   const issues: FinanceImportIssue[] = [];
   let imported = 0;
   let updated = 0;
@@ -930,6 +1228,8 @@ export async function importFinanceFiles(
       summaryFiles.push(file);
     } else if (kind === "expense-document") {
       expenseDocumentFiles.push(file);
+    } else if (kind === "trial-balance") {
+      trialBalanceFiles.push(file);
     } else {
       issues.push({
         sourceCode: file.name,
@@ -956,6 +1256,14 @@ export async function importFinanceFiles(
     issues.push(...result.issues);
   }
 
+  if (trialBalanceFiles.length > 0) {
+    const result = await importTrialBalanceFiles(trialBalanceFiles, options);
+    imported += result.imported;
+    updated += result.updated;
+    result.detectedUnits.forEach((unit) => detectedUnits.add(unit));
+    issues.push(...result.issues);
+  }
+
   return {
     processedFiles: files.length,
     imported,
@@ -965,4 +1273,3 @@ export async function importFinanceFiles(
     issues,
   };
 }
-

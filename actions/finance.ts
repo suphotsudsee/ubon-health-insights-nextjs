@@ -23,6 +23,14 @@ import type {
 } from '@/types'
 import { Prisma } from '@prisma/client'
 
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  return value as Prisma.InputJsonValue
+}
+
 // ============================================================
 // Validation Schemas
 // ============================================================
@@ -34,6 +42,13 @@ const createFinanceRecordSchema = z.object({
   expense: z.number().min(0),
   incomeBreakdown: z.record(z.string(), z.number()).optional(),
   expenseBreakdown: z.record(z.string(), z.number()).optional(),
+  openingDebit: z.number().min(0).optional(),
+  openingCredit: z.number().min(0).optional(),
+  movementDebit: z.number().min(0).optional(),
+  movementCredit: z.number().min(0).optional(),
+  closingDebit: z.number().min(0).optional(),
+  closingCredit: z.number().min(0).optional(),
+  trialBalanceRows: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
   recorder: z.string().optional(),
 })
@@ -43,6 +58,13 @@ const updateFinanceRecordSchema = z.object({
   expense: z.number().min(0).optional(),
   incomeBreakdown: z.record(z.string(), z.number()).optional(),
   expenseBreakdown: z.record(z.string(), z.number()).optional(),
+  openingDebit: z.number().min(0).optional(),
+  openingCredit: z.number().min(0).optional(),
+  movementDebit: z.number().min(0).optional(),
+  movementCredit: z.number().min(0).optional(),
+  closingDebit: z.number().min(0).optional(),
+  closingCredit: z.number().min(0).optional(),
+  trialBalanceRows: z.array(z.record(z.string(), z.unknown())).optional(),
   notes: z.string().optional(),
   recorder: z.string().optional(),
 })
@@ -108,6 +130,13 @@ export async function getFinanceRecords(
       balance: Number(r.balance),
       incomeBreakdown: r.incomeBreakdown as Record<string, number> | null,
       expenseBreakdown: r.expenseBreakdown as Record<string, number> | null,
+      openingDebit: Number(r.openingDebit),
+      openingCredit: Number(r.openingCredit),
+      movementDebit: Number(r.movementDebit),
+      movementCredit: Number(r.movementCredit),
+      closingDebit: Number(r.closingDebit),
+      closingCredit: Number(r.closingCredit),
+      trialBalanceRows: r.trialBalanceRows as Array<Record<string, unknown>> | null,
       notes: r.notes,
       recorder: r.recorder,
       submittedAt: r.submittedAt,
@@ -154,6 +183,13 @@ export async function getFinanceRecord(id: number): Promise<ApiResponse<FinanceR
       balance: Number(record.balance),
       incomeBreakdown: record.incomeBreakdown as Record<string, number> | null,
       expenseBreakdown: record.expenseBreakdown as Record<string, number> | null,
+      openingDebit: Number(record.openingDebit),
+      openingCredit: Number(record.openingCredit),
+      movementDebit: Number(record.movementDebit),
+      movementCredit: Number(record.movementCredit),
+      closingDebit: Number(record.closingDebit),
+      closingCredit: Number(record.closingCredit),
+      trialBalanceRows: record.trialBalanceRows as Array<Record<string, unknown>> | null,
       notes: record.notes,
       recorder: record.recorder,
       submittedAt: record.submittedAt,
@@ -207,6 +243,13 @@ export async function createFinanceRecord(
         balance,
         incomeBreakdown: validated.incomeBreakdown || undefined,
         expenseBreakdown: validated.expenseBreakdown || undefined,
+        openingDebit: validated.openingDebit ?? 0,
+        openingCredit: validated.openingCredit ?? 0,
+        movementDebit: validated.movementDebit ?? validated.expense ?? 0,
+        movementCredit: validated.movementCredit ?? validated.income ?? 0,
+        closingDebit: validated.closingDebit ?? 0,
+        closingCredit: validated.closingCredit ?? 0,
+        trialBalanceRows: toInputJsonValue(validated.trialBalanceRows),
         notes: validated.notes,
         recorder: validated.recorder,
       },
@@ -255,6 +298,7 @@ export async function updateFinanceRecord(
       where: { id },
       data: {
         ...validated,
+        trialBalanceRows: toInputJsonValue(validated.trialBalanceRows),
         balance,
       },
     })
@@ -328,14 +372,23 @@ export async function getFinanceSummary(
         income: true,
         expense: true,
         balance: true,
+        openingDebit: true,
+        openingCredit: true,
+        movementDebit: true,
+        movementCredit: true,
+        closingDebit: true,
+        closingCredit: true,
         healthUnitId: true,
       },
     })
 
     const summary = {
-      totalIncome: records.reduce((sum, r) => sum + Number(r.income), 0),
-      totalExpense: records.reduce((sum, r) => sum + Number(r.expense), 0),
-      totalBalance: records.reduce((sum, r) => sum + Number(r.balance), 0),
+      totalIncome: records.reduce((sum, r) => sum + Number(r.movementCredit || r.income), 0),
+      totalExpense: records.reduce((sum, r) => sum + Number(r.movementDebit || r.expense), 0),
+      totalBalance: records.reduce(
+        (sum, r) => sum + (Number(r.closingDebit || 0) - Number(r.closingCredit || 0) || Number(r.balance)),
+        0
+      ),
       unitCount: new Set(records.map((r) => r.healthUnitId)).size,
     }
 
@@ -382,9 +435,9 @@ export async function getFinanceTrends(
         monthMap.set(month, { income: 0, expense: 0, balance: 0, name: record.fiscalPeriod.monthNameTh })
       }
       const data = monthMap.get(month)!
-      data.income += Number(record.income)
-      data.expense += Number(record.expense)
-      data.balance += Number(record.balance)
+      data.income += Number(record.movementCredit || record.income)
+      data.expense += Number(record.movementDebit || record.expense)
+      data.balance += Number(record.closingDebit || 0) - Number(record.closingCredit || 0) || Number(record.balance)
     }
 
     const thaiMonths = [
@@ -466,9 +519,9 @@ export async function getFinanceByUnit(
         })
       }
       const data = unitMap.get(unitId)!
-      data.income += Number(record.income)
-      data.expense += Number(record.expense)
-      data.balance += Number(record.balance)
+      data.income += Number(record.movementCredit || record.income)
+      data.expense += Number(record.movementDebit || record.expense)
+      data.balance += Number(record.closingDebit || 0) - Number(record.closingCredit || 0) || Number(record.balance)
     }
 
     const result = Array.from(unitMap.entries()).map(([id, data]) => ({

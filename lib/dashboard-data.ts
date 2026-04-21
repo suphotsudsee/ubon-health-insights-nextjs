@@ -113,6 +113,13 @@ export async function getDashboardDataset() {
       balance: Number(item.balance),
       incomeBreakdown: item.incomeBreakdown,
       expenseBreakdown: item.expenseBreakdown,
+      openingDebit: Number(item.openingDebit),
+      openingCredit: Number(item.openingCredit),
+      movementDebit: Number(item.movementDebit),
+      movementCredit: Number(item.movementCredit),
+      closingDebit: Number(item.closingDebit),
+      closingCredit: Number(item.closingCredit),
+      trialBalanceRows: item.trialBalanceRows,
       recorder: item.recorder || "",
     })),
   };
