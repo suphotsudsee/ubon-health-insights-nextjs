@@ -179,9 +179,34 @@ async function tableExists(tableName) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
+async function columnExists(tableName, columnName) {
+  const dbName = process.env.DB_NAME || "ubon_health";
+  const rows = await prisma.$queryRawUnsafe(
+    `
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME = ?
+      LIMIT 1
+    `,
+    dbName,
+    tableName,
+    columnName,
+  );
+
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function normalizeFinanceAccountCodesBeforeDbPush() {
   const hasFinanceAccounts = await tableExists("finance_accounts");
   if (!hasFinanceAccounts) {
+    return;
+  }
+
+  const hasAccountCode = await columnExists("finance_accounts", "account_code");
+  if (!hasAccountCode) {
+    console.log("finance_accounts.account_code does not exist yet, skipping preflight duplicate check.");
     return;
   }
 
