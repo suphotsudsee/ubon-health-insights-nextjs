@@ -126,6 +126,7 @@ function getNetClosing(record: FinanceRecordItem) {
 }
 
 export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPeriod }: Props) {
+  const statusPageSize = 10;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [records, setRecords] = useState<FinanceRecordItem[]>([]);
@@ -140,6 +141,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const [previewing, setPreviewing] = useState(false);
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreviewResponse | null>(null);
+  const [statusPage, setStatusPage] = useState(1);
 
   const periodsForSelectedYear = useMemo(() => {
     const year = Number(selectedYear);
@@ -194,6 +196,25 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     [monthlyImportRows]
   );
 
+  const statusTotalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(monthlyImportRows.length / statusPageSize));
+  }, [monthlyImportRows.length]);
+
+  const paginatedMonthlyImportRows = useMemo(() => {
+    const startIndex = (statusPage - 1) * statusPageSize;
+    return monthlyImportRows.slice(startIndex, startIndex + statusPageSize);
+  }, [monthlyImportRows, statusPage]);
+
+  const statusPageRange = useMemo(() => {
+    if (monthlyImportRows.length === 0) {
+      return { start: 0, end: 0 };
+    }
+
+    const start = (statusPage - 1) * statusPageSize + 1;
+    const end = Math.min(statusPage * statusPageSize, monthlyImportRows.length);
+    return { start, end };
+  }, [monthlyImportRows.length, statusPage]);
+
   const totals = useMemo(() => {
     return filteredRecords.reduce(
       (sum, record) => ({
@@ -237,6 +258,16 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   useEffect(() => {
     setImportPreview(null);
   }, [selectedFiles, selectedYear]);
+
+  useEffect(() => {
+    setStatusPage(1);
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    if (statusPage > statusTotalPages) {
+      setStatusPage(statusTotalPages);
+    }
+  }, [statusPage, statusTotalPages]);
 
   useEffect(() => {
     void loadRecords();
@@ -559,7 +590,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 </tr>
               </thead>
               <tbody>
-                {monthlyImportRows.map((row) => (
+                {paginatedMonthlyImportRows.map((row) => (
                   <tr key={row.id} className="border-b last:border-b-0">
                     <td className="py-4">
                       <div className="font-medium">{row.code}</div>
@@ -578,6 +609,34 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-4 flex flex-col gap-3 border-t pt-4 text-sm md:flex-row md:items-center md:justify-between">
+            <p className="text-muted-foreground">
+              แสดง {statusPageRange.start}-{statusPageRange.end} จาก {monthlyImportRows.length} แห่ง
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setStatusPage((current) => Math.max(1, current - 1))}
+                disabled={statusPage === 1}
+              >
+                ก่อนหน้า
+              </Button>
+              <span className="min-w-[96px] text-center text-muted-foreground">
+                หน้า {statusPage} / {statusTotalPages}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setStatusPage((current) => Math.min(statusTotalPages, current + 1))}
+                disabled={statusPage === statusTotalPages}
+              >
+                ถัดไป
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
