@@ -138,7 +138,7 @@ export function getQuarter(month: number): number {
  * Get fiscal quarter (Thai fiscal year starts October)
  */
 export function getFiscalQuarter(month: number): number {
-  if (month >= 10 || month <= 12) return 1
+  if (month >= 10 && month <= 12) return 1
   if (month >= 1 && month <= 3) return 2
   if (month >= 4 && month <= 6) return 3
   return 4
@@ -154,7 +154,7 @@ export function sleep(ms: number): Promise<void> {
 /**
  * Debounce function
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
+export function debounce<T extends (...args: any[]) => any>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -277,6 +277,7 @@ export function average(array: number[]): number {
  * Get min value from array
  */
 export function min(array: number[]): number {
+  if (array.length === 0) return 0
   return Math.min(...array)
 }
 
@@ -284,5 +285,6 @@ export function min(array: number[]): number {
  * Get max value from array
  */
 export function max(array: number[]): number {
+  if (array.length === 0) return 0
   return Math.max(...array)
 }

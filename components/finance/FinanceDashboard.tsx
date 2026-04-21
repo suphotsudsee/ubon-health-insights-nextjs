@@ -141,7 +141,7 @@ export function FinanceDashboard() {
       month,
       income: monthData.reduce((sum, f) => sum + f.income, 0),
       expense: monthData.reduce((sum, f) => sum + f.expense, 0),
-      balance: monthData.length > 0 ? monthData.reduce((sum, f) => sum + f.balance, 0) / monthData.length : 0,
+      balance: monthData.reduce((sum, f) => sum + f.balance, 0),
     };
   });
 

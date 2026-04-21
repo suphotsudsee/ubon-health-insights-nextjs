@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -385,6 +386,324 @@ function getKpiCategoryLabel(category: KpiCategoryItem) {
   if (category.code === "PPFS") {
     return "PPFS";
   }
+=======
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Building2,
+  CalendarRange,
+  MapPinned,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  Settings2,
+  Trash2,
+  UserCog,
+  Users,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FinanceSettingsSection } from "@/components/settings/FinanceSettingsSection";
+
+type UserItem = {
+  id: number;
+  email: string;
+  name: string;
+  role: "admin" | "manager" | "staff" | "viewer";
+  healthUnitId: number | null;
+  isActive: boolean;
+  healthUnit?: {
+    id: number;
+    code?: string;
+    name: string;
+  } | null;
+};
+
+type DashboardStats = {
+  totalUnits: number;
+  totalPopulation: number;
+  totalVillages: number;
+  totalHouseholds: number;
+  totalVolunteers: number;
+};
+
+type HealthUnitItem = {
+  id: number;
+  code: string;
+  name: string;
+  shortName: string | null;
+  amphoeId: number;
+  amphoeName: string;
+  tambonId: number | null;
+  tambonName: string | null;
+  moo: string | null;
+  affiliation: string | null;
+  email: string | null;
+  phone: string | null;
+  transferYear: number | null;
+  unitSize: string | null;
+  cupCode: string | null;
+  cupName: string | null;
+  localAuthority: string | null;
+  province: string | null;
+  ucPopulation66: number | null;
+  ucPopulation67: number | null;
+  ucPopulation68: number | null;
+  templeCount: number;
+  primarySchoolCount: number;
+  opportunitySchoolCount: number;
+  secondarySchoolCount: number;
+  childDevelopmentCenterCount: number;
+  healthStationCount: number;
+  status: "active" | "inactive";
+};
+
+type HealthUnitDetailItem = HealthUnitItem & {
+  demographics: {
+    totalPopulation: number | null;
+    male: number | null;
+    female: number | null;
+    elderlyPopulation: number | null;
+    villages: number | null;
+    households: number | null;
+    healthVolunteers: number | null;
+  } | null;
+};
+
+type FiscalPeriodItem = {
+  id?: number;
+  fiscalYear: number;
+  quarter: number;
+  month: number;
+  monthNameTh?: string;
+  startDate?: string;
+  endDate?: string;
+  isClosed?: boolean;
+};
+
+type FiscalYearSummary = {
+  fiscalYear: number;
+  periodCount: number;
+  closedCount: number;
+  hasUsage: boolean;
+  totalKpiResults: number;
+  totalFinanceRecords: number;
+  totalDemographics: number;
+};
+
+type DistrictItem = {
+  id: number;
+  code: string;
+  nameTh: string;
+};
+
+type SubdistrictItem = {
+  id: number;
+  code: string;
+  nameTh: string;
+  amphoeId: number;
+};
+
+type KpiCategoryItem = {
+  id: number;
+  code: string;
+  nameTh: string;
+  nameEn?: string | null;
+  displayOrder: number;
+  isActive?: boolean;
+  _count?: {
+    definitions: number;
+  };
+};
+
+type KpiDefinitionAdminItem = {
+  id: number;
+  categoryId: number;
+  code: string;
+  nameTh: string;
+  nameEn: string | null;
+  unit: string;
+  targetValue: number | null;
+  targetType: "min" | "max" | "exact";
+  displayOrder: number;
+  isActive: boolean;
+  isDeleted: boolean;
+  category: KpiCategoryItem;
+  _count: {
+    results: number;
+  };
+};
+
+type UserFormState = {
+  email: string;
+  password: string;
+  name: string;
+  role: UserItem["role"];
+  healthUnitId: string;
+  isActive: boolean;
+};
+
+type UnitFormState = {
+  code: string;
+  name: string;
+  shortName: string;
+  amphoeId: string;
+  tambonId: string;
+  moo: string;
+  affiliation: string;
+  email: string;
+  phone: string;
+  transferYear: string;
+  unitSize: string;
+  cupCode: string;
+  cupName: string;
+  localAuthority: string;
+  province: string;
+  ucPopulation66: string;
+  ucPopulation67: string;
+  ucPopulation68: string;
+  male: string;
+  female: string;
+  elderlyPopulation: string;
+  totalPopulation: string;
+  villages: string;
+  households: string;
+  healthVolunteers: string;
+  templeCount: string;
+  primarySchoolCount: string;
+  opportunitySchoolCount: string;
+  secondarySchoolCount: string;
+  childDevelopmentCenterCount: string;
+  healthStationCount: string;
+  status: "active" | "inactive";
+};
+
+type FiscalYearFormState = {
+  fiscalYear: string;
+};
+
+type KpiDefinitionFormState = {
+  categoryId: string;
+  code: string;
+  nameTh: string;
+  nameEn: string;
+  unit: string;
+  targetValue: string;
+  targetType: "min" | "max" | "exact";
+  displayOrder: string;
+  isActive: boolean;
+};
+
+type KpiCategoryFormState = {
+  code: string;
+  nameTh: string;
+  nameEn: string;
+  displayOrder: string;
+  isActive: boolean;
+};
+
+const emptyUserForm: UserFormState = {
+  email: "",
+  password: "",
+  name: "",
+  role: "viewer",
+  healthUnitId: "",
+  isActive: true,
+};
+
+const emptyUnitForm: UnitFormState = {
+  code: "",
+  name: "",
+  shortName: "",
+  amphoeId: "",
+  tambonId: "",
+  moo: "",
+  affiliation: "",
+  email: "",
+  phone: "",
+  transferYear: "",
+  unitSize: "",
+  cupCode: "",
+  cupName: "",
+  localAuthority: "",
+  province: "",
+  ucPopulation66: "0",
+  ucPopulation67: "0",
+  ucPopulation68: "0",
+  male: "0",
+  female: "0",
+  elderlyPopulation: "0",
+  totalPopulation: "0",
+  villages: "0",
+  households: "0",
+  healthVolunteers: "0",
+  templeCount: "0",
+  primarySchoolCount: "0",
+  opportunitySchoolCount: "0",
+  secondarySchoolCount: "0",
+  childDevelopmentCenterCount: "0",
+  healthStationCount: "0",
+  status: "active",
+};
+
+const emptyFiscalYearForm: FiscalYearFormState = {
+  fiscalYear: "",
+};
+
+const emptyKpiForm: KpiDefinitionFormState = {
+  categoryId: "",
+  code: "",
+  nameTh: "",
+  nameEn: "",
+  unit: "%",
+  targetValue: "",
+  targetType: "min",
+  displayOrder: "0",
+  isActive: true,
+};
+
+const emptyKpiCategoryForm: KpiCategoryFormState = {
+  code: "",
+  nameTh: "",
+  nameEn: "",
+  displayOrder: "0",
+  isActive: true,
+};
+
+const dialogContentClassName = "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg";
+const dialogContentWideClassName = "flex max-h-[90vh] flex-col overflow-hidden sm:max-w-4xl";
+const dialogFormClassName = "flex min-h-0 flex-1 flex-col";
+const dialogBodyClassName = "min-h-0 flex-1 space-y-4 overflow-y-auto pr-1";
+const dialogFooterClassName = "border-t bg-background pt-4";
+
+const roleLabels: Record<UserItem["role"], string> = {
+  admin: "ผู้ดูแลระบบ",
+  manager: "ผู้จัดการ",
+  staff: "เจ้าหน้าที่",
+  viewer: "ผู้ดูข้อมูล",
+};
+
+function formatNumber(value?: number) {
+  return new Intl.NumberFormat("th-TH").format(value || 0);
+}
+
+function getKpiCategoryLabel(category: KpiCategoryItem) {
+  if (category.code === "PPFS") {
+    return "PPFS";
+  }
+>>>>>>> 1a0330e (test)
   if (category.code === "TTM") {
     return "แพทย์แผนไทย";
   }
