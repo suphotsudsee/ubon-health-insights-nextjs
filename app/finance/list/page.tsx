@@ -88,14 +88,6 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function getNetOpening(record: RecordItem) {
-  return (record.openingDebit || 0) - (record.openingCredit || 0);
-}
-
-function getNetClosing(record: RecordItem) {
-  return (record.closingDebit || 0) - (record.closingCredit || 0);
-}
-
 export default function FinanceListPage() {
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
@@ -139,7 +131,7 @@ export default function FinanceListPage() {
         if (!recordRes.ok) throw new Error(recordBody.error || "โหลดรายการงบทดลองไม่สำเร็จ");
         if (!districtRes.ok) throw new Error(districtBody.error || "โหลดอำเภอไม่สำเร็จ");
         if (!unitRes.ok) throw new Error(unitBody.error || "โหลดหน่วยบริการไม่สำเร็จ");
-        if (!periodRes.ok) throw new Error(periodBody.error || "โหลดงวดข้อมูลไม่สำเร็จ");
+        if (!periodRes.ok) throw new Error(periodBody.error || "โหลดย้อมูลงวดไม่สำเร็จ");
 
         if (!mounted) return;
 
@@ -251,7 +243,8 @@ export default function FinanceListPage() {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-primary">รายการงบทดลอง</h1>
           <p className="text-muted-foreground">
-            แสดงข้อมูลตั้งต้นจากไฟล์งบทดลองรายเดือน โดยยึดยอดยกมา รายการระหว่างเดือน และยอดยกไปเป็นแกนหลักของงานการเงิน
+            แสดงข้อมูลจากไฟล์งบทดลองรายเดือน โดยยึดยอดยกมา เดบิตระหว่างเดือน เครดิตระหว่างเดือน
+            และยอดยกไปจากต้นฉบับ แยกเดบิตและเครดิตชัดเจน
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -379,23 +372,23 @@ export default function FinanceListPage() {
       <Card>
         <CardHeader>
           <CardTitle>ข้อมูลงบทดลอง</CardTitle>
-          <CardDescription>
-            {loading ? "กำลังโหลดข้อมูล..." : `พบ ${filteredRecords.length} รายการ`}
-          </CardDescription>
+          <CardDescription>{loading ? "กำลังโหลดข้อมูล..." : `พบ ${filteredRecords.length} รายการ`}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-sm">
+            <table className="w-full min-w-[1420px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
                   <th className="px-4 py-3 font-medium">วันที่บันทึก</th>
                   <th className="px-4 py-3 font-medium">งวดข้อมูล</th>
                   <th className="px-4 py-3 font-medium">หน่วยบริการ</th>
                   <th className="px-4 py-3 font-medium">อำเภอ</th>
-                  <th className="px-4 py-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดมาเดบิต</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดมาเครดิต</th>
                   <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
                   <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
-                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปสุทธิ</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปเดบิต</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปเครดิต</th>
                   <th className="px-4 py-3 font-medium">ผู้บันทึก</th>
                   <th className="px-4 py-3 text-right font-medium">จัดการ</th>
                 </tr>
@@ -412,10 +405,12 @@ export default function FinanceListPage() {
                       <div className="text-muted-foreground">{record.unitName}</div>
                     </td>
                     <td className="px-4 py-3">{record.amphoeName}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(getNetOpening(record))}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(record.openingDebit)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(record.openingCredit)}</td>
                     <td className="px-4 py-3 text-right text-rose-700">{formatCurrency(record.movementDebit)}</td>
                     <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(record.movementCredit)}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(getNetClosing(record))}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(record.closingDebit)}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(record.closingCredit)}</td>
                     <td className="px-4 py-3">{record.recorder || "-"}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
@@ -454,10 +449,14 @@ export default function FinanceListPage() {
 
           {selectedRecord ? (
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">ยกยอดมา</p>
-                  <p className="mt-1 text-xl font-semibold">{formatCurrency(getNetOpening(selectedRecord))}</p>
+                  <p className="text-sm text-muted-foreground">ยกยอดมาเดบิต</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(selectedRecord.openingDebit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">ยกยอดมาเครดิต</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(selectedRecord.openingCredit)}</p>
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">เดบิตระหว่างเดือน</p>
@@ -468,28 +467,16 @@ export default function FinanceListPage() {
                   <p className="mt-1 text-xl font-semibold text-emerald-700">{formatCurrency(selectedRecord.movementCredit)}</p>
                 </div>
                 <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">ยกยอดไปสุทธิ</p>
-                  <p className="mt-1 text-xl font-semibold">{formatCurrency(getNetClosing(selectedRecord))}</p>
+                  <p className="text-sm text-muted-foreground">ยกยอดไปเดบิต</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(selectedRecord.closingDebit)}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">ยกยอดไปเครดิต</p>
+                  <p className="mt-1 text-xl font-semibold">{formatCurrency(selectedRecord.closingCredit)}</p>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">เดบิตยกมา</p>
-                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.openingDebit)}</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">เครดิตยกมา</p>
-                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.openingCredit)}</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">เดบิตยกไป</p>
-                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.closingDebit)}</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">เครดิตยกไป</p>
-                  <p className="mt-1 font-medium">{formatCurrency(selectedRecord.closingCredit)}</p>
-                </div>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">ผู้บันทึก</p>
                   <p className="mt-1 font-medium">{selectedRecord.recorder || "-"}</p>
@@ -518,12 +505,12 @@ export default function FinanceListPage() {
                       <tr className="border-b bg-muted/40 text-left">
                         <th className="px-4 py-3 font-medium">รหัสบัญชี</th>
                         <th className="px-4 py-3 font-medium">ชื่อบัญชี</th>
-                        <th className="px-4 py-3 text-right font-medium">เดบิตยกมา</th>
-                        <th className="px-4 py-3 text-right font-medium">เครดิตยกมา</th>
+                        <th className="px-4 py-3 text-right font-medium">ยกยอดมาเดบิต</th>
+                        <th className="px-4 py-3 text-right font-medium">ยกยอดมาเครดิต</th>
                         <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
                         <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
-                        <th className="px-4 py-3 text-right font-medium">เดบิตยกไป</th>
-                        <th className="px-4 py-3 text-right font-medium">เครดิตยกไป</th>
+                        <th className="px-4 py-3 text-right font-medium">ยกยอดไปเดบิต</th>
+                        <th className="px-4 py-3 text-right font-medium">ยกยอดไปเครดิต</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { FilterBar } from "@/components/dashboard/FilterBar";
@@ -56,7 +57,7 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
     style: "currency",
     currency: "THB",
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
   }).format(value || 0);
 }
 
@@ -137,6 +138,34 @@ function colorForIndex(index: number, palette: string[]) {
   return palette[index % palette.length];
 }
 
+function SummaryMetric({
+  label,
+  value,
+  icon,
+  cardClassName,
+  iconClassName,
+  valueClassName,
+}: {
+  label: string;
+  value: number;
+  icon: ReactNode;
+  cardClassName: string;
+  iconClassName: string;
+  valueClassName: string;
+}) {
+  return (
+    <Card className={cardClassName}>
+      <CardContent className="flex items-center gap-4 p-6">
+        <div className={iconClassName}>{icon}</div>
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className={valueClassName}>{formatCurrency(value)}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function FinanceDashboard() {
   const { data, loading } = useDashboardData();
   const [fiscalYear, setFiscalYear] = useState("2567");
@@ -150,35 +179,69 @@ export function FinanceDashboard() {
 
   const unitCodes =
     amphoe === "all"
-      ? healthUnits.map((u) => u.code)
-      : healthUnits.filter((u) => u.amphoe === amphoe).map((u) => u.code);
+      ? healthUnits.map((unit) => unit.code)
+      : healthUnits.filter((unit) => unit.amphoe === amphoe).map((unit) => unit.code);
 
   const filteredFinance = financeData.filter(
     (item) => item.fiscalYear.toString() === fiscalYear && unitCodes.includes(item.unitCode)
   );
 
-  const totalOpening = filteredFinance.reduce((sum, item) => sum + ((item.openingDebit || 0) - (item.openingCredit || 0)), 0);
-  const totalMovementDebit = filteredFinance.reduce((sum, item) => sum + (item.movementDebit || 0), 0);
-  const totalMovementCredit = filteredFinance.reduce((sum, item) => sum + (item.movementCredit || 0), 0);
-  const totalClosing = filteredFinance.reduce((sum, item) => sum + ((item.closingDebit || 0) - (item.closingCredit || 0)), 0);
+  const totals = useMemo(
+    () =>
+      filteredFinance.reduce(
+        (sum, item) => ({
+          openingDebit: sum.openingDebit + (item.openingDebit || 0),
+          openingCredit: sum.openingCredit + (item.openingCredit || 0),
+          movementDebit: sum.movementDebit + (item.movementDebit || 0),
+          movementCredit: sum.movementCredit + (item.movementCredit || 0),
+          closingDebit: sum.closingDebit + (item.closingDebit || 0),
+          closingCredit: sum.closingCredit + (item.closingCredit || 0),
+        }),
+        {
+          openingDebit: 0,
+          openingCredit: 0,
+          movementDebit: 0,
+          movementCredit: 0,
+          closingDebit: 0,
+          closingCredit: 0,
+        }
+      ),
+    [filteredFinance]
+  );
 
   const chartData = fiscalMonthList.map((month) => {
     const monthData = filteredFinance.filter((item) => item.month === month);
     return {
       month,
-      opening: monthData.reduce((sum, item) => sum + ((item.openingDebit || 0) - (item.openingCredit || 0)), 0),
+      openingDebit: monthData.reduce((sum, item) => sum + (item.openingDebit || 0), 0),
+      openingCredit: monthData.reduce((sum, item) => sum + (item.openingCredit || 0), 0),
       movementDebit: monthData.reduce((sum, item) => sum + (item.movementDebit || 0), 0),
       movementCredit: monthData.reduce((sum, item) => sum + (item.movementCredit || 0), 0),
-      closing: monthData.reduce((sum, item) => sum + ((item.closingDebit || 0) - (item.closingCredit || 0)), 0),
+      closingDebit: monthData.reduce((sum, item) => sum + (item.closingDebit || 0), 0),
+      closingCredit: monthData.reduce((sum, item) => sum + (item.closingCredit || 0), 0),
     };
   });
 
   const movementCreditCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "movementCredit", topLimit);
   const movementDebitCategoryData = aggregateBreakdownByTypeWithLimit(filteredFinance, "movementDebit", topLimit);
-  const movementCreditStackedCategories = movementCreditCategoryData.slice(0, 4).map((item) => ({ key: item.name, label: item.shortName }));
-  const movementDebitStackedCategories = movementDebitCategoryData.slice(0, 4).map((item) => ({ key: item.name, label: item.shortName }));
-  const movementCreditStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "movementCredit", movementCreditStackedCategories);
-  const movementDebitStackedData = buildMonthlyStackedData(filteredFinance, fiscalMonthList, "movementDebit", movementDebitStackedCategories);
+  const movementCreditStackedCategories = movementCreditCategoryData
+    .slice(0, 4)
+    .map((item) => ({ key: item.name, label: item.shortName }));
+  const movementDebitStackedCategories = movementDebitCategoryData
+    .slice(0, 4)
+    .map((item) => ({ key: item.name, label: item.shortName }));
+  const movementCreditStackedData = buildMonthlyStackedData(
+    filteredFinance,
+    fiscalMonthList,
+    "movementCredit",
+    movementCreditStackedCategories
+  );
+  const movementDebitStackedData = buildMonthlyStackedData(
+    filteredFinance,
+    fiscalMonthList,
+    "movementDebit",
+    movementDebitStackedCategories
+  );
   const movementCreditPalette = ["#16a34a", "#22c55e", "#4ade80", "#86efac"];
   const movementDebitPalette = ["#dc2626", "#ef4444", "#f87171", "#fca5a5"];
 
@@ -200,60 +263,62 @@ export function FinanceDashboard() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-primary">Dashboard งบทดลอง</h1>
         <p className="text-muted-foreground">
-          สรุปยกยอดมา เดบิตระหว่างเดือน เครดิตระหว่างเดือน และยอดยกไปสุทธิจากไฟล์งบทดลองที่นำเข้าในระบบ
+          สรุปยกยอดมา เดบิตระหว่างเดือน เครดิตระหว่างเดือน และยอดยกไปจากไฟล์งบทดลองที่นำเข้าในระบบ
+          โดยแสดงแยกเดบิตและเครดิตตรงตามต้นฉบับ
         </p>
       </div>
 
       <FilterBar fiscalYear={fiscalYear} setFiscalYear={setFiscalYear} amphoe={amphoe} setAmphoe={setAmphoe} />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="card-hover border-l-4 border-l-status-good">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-status-good/20">
-              <TrendingUp className="h-6 w-6 text-status-good" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">ยกยอดมาสุทธิ</p>
-              <p className="text-2xl font-bold text-status-good">{formatCurrency(totalOpening)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-l-4 border-l-status-critical">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-status-critical/20">
-              <TrendingDown className="h-6 w-6 text-status-critical" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">เดบิตระหว่างเดือน</p>
-              <p className="text-2xl font-bold text-status-critical">{formatCurrency(totalMovementDebit)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-l-4 border-l-primary">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
-              <Wallet className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">เครดิตระหว่างเดือน</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(totalMovementCredit)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-l-4 border-l-violet-600">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
-              <DollarSign className="h-6 w-6 text-violet-700" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">ยกยอดไปสุทธิ</p>
-              <p className="text-2xl font-bold text-violet-700">{formatCurrency(totalClosing)}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <SummaryMetric
+          label="ยกยอดมาเดบิต"
+          value={totals.openingDebit}
+          icon={<TrendingUp className="h-6 w-6 text-status-good" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-status-good/20"
+          valueClassName="text-2xl font-bold text-status-good"
+          cardClassName="card-hover border-l-4 border-l-status-good"
+        />
+        <SummaryMetric
+          label="ยกยอดมาเครดิต"
+          value={totals.openingCredit}
+          icon={<TrendingUp className="h-6 w-6 text-sky-700" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100"
+          valueClassName="text-2xl font-bold text-sky-700"
+          cardClassName="card-hover border-l-4 border-l-sky-600"
+        />
+        <SummaryMetric
+          label="เดบิตระหว่างเดือน"
+          value={totals.movementDebit}
+          icon={<TrendingDown className="h-6 w-6 text-status-critical" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-status-critical/20"
+          valueClassName="text-2xl font-bold text-status-critical"
+          cardClassName="card-hover border-l-4 border-l-status-critical"
+        />
+        <SummaryMetric
+          label="เครดิตระหว่างเดือน"
+          value={totals.movementCredit}
+          icon={<Wallet className="h-6 w-6 text-primary" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20"
+          valueClassName="text-2xl font-bold text-primary"
+          cardClassName="card-hover border-l-4 border-l-primary"
+        />
+        <SummaryMetric
+          label="ยกยอดไปเดบิต"
+          value={totals.closingDebit}
+          icon={<DollarSign className="h-6 w-6 text-violet-700" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100"
+          valueClassName="text-2xl font-bold text-violet-700"
+          cardClassName="card-hover border-l-4 border-l-violet-600"
+        />
+        <SummaryMetric
+          label="ยกยอดไปเครดิต"
+          value={totals.closingCredit}
+          icon={<DollarSign className="h-6 w-6 text-amber-700" />}
+          iconClassName="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100"
+          valueClassName="text-2xl font-bold text-amber-700"
+          cardClassName="card-hover border-l-4 border-l-amber-600"
+        />
       </div>
 
       <Card className="card-hover">
@@ -279,10 +344,12 @@ export function FinanceDashboard() {
                   }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="opening" name="ยกยอดมาสุทธิ" stroke="hsl(213, 50%, 20%)" strokeWidth={2} dot={{ fill: "hsl(213, 50%, 20%)" }} />
-                <Line type="monotone" dataKey="movementDebit" name="เดบิตระหว่างเดือน" stroke="hsl(0, 72%, 51%)" strokeWidth={2} dot={{ fill: "hsl(0, 72%, 51%)" }} />
-                <Line type="monotone" dataKey="movementCredit" name="เครดิตระหว่างเดือน" stroke="hsl(142, 71%, 45%)" strokeWidth={2} dot={{ fill: "hsl(142, 71%, 45%)" }} />
-                <Line type="monotone" dataKey="closing" name="ยกยอดไปสุทธิ" stroke="hsl(262, 60%, 45%)" strokeWidth={2} dot={{ fill: "hsl(262, 60%, 45%)" }} />
+                <Line type="monotone" dataKey="openingDebit" name="ยกยอดมาเดบิต" stroke="#1e3a5f" strokeWidth={2} dot={{ fill: "#1e3a5f" }} />
+                <Line type="monotone" dataKey="openingCredit" name="ยกยอดมาเครดิต" stroke="#0284c7" strokeWidth={2} dot={{ fill: "#0284c7" }} />
+                <Line type="monotone" dataKey="movementDebit" name="เดบิตระหว่างเดือน" stroke="#dc2626" strokeWidth={2} dot={{ fill: "#dc2626" }} />
+                <Line type="monotone" dataKey="movementCredit" name="เครดิตระหว่างเดือน" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a" }} />
+                <Line type="monotone" dataKey="closingDebit" name="ยกยอดไปเดบิต" stroke="#7c3aed" strokeWidth={2} dot={{ fill: "#7c3aed" }} />
+                <Line type="monotone" dataKey="closingCredit" name="ยกยอดไปเครดิต" stroke="#d97706" strokeWidth={2} dot={{ fill: "#d97706" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -318,13 +385,11 @@ export function FinanceDashboard() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="hsl(142, 71%, 45%)" />
+                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="#16a34a" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {movementCreditCategoryData.length === 0 ? (
-              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเครดิตระหว่างเดือนตามตัวกรองปัจจุบัน</p>
-            ) : null}
+            {movementCreditCategoryData.length === 0 ? <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเครดิตระหว่างเดือนตามตัวกรองปัจจุบัน</p> : null}
           </CardContent>
         </Card>
 
@@ -356,13 +421,11 @@ export function FinanceDashboard() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="hsl(0, 72%, 51%)" />
+                  <Bar dataKey="amount" radius={[0, 10, 10, 0]} fill="#dc2626" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {movementDebitCategoryData.length === 0 ? (
-              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเดบิตระหว่างเดือนตามตัวกรองปัจจุบัน</p>
-            ) : null}
+            {movementDebitCategoryData.length === 0 ? <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเดบิตระหว่างเดือนตามตัวกรองปัจจุบัน</p> : null}
           </CardContent>
         </Card>
       </div>
@@ -401,9 +464,7 @@ export function FinanceDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {movementCreditStackedCategories.length === 0 ? (
-              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟเครดิตระหว่างเดือน</p>
-            ) : null}
+            {movementCreditStackedCategories.length === 0 ? <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟเครดิตระหว่างเดือน</p> : null}
           </CardContent>
         </Card>
 
@@ -440,9 +501,7 @@ export function FinanceDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {movementDebitStackedCategories.length === 0 ? (
-              <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟเดบิตระหว่างเดือน</p>
-            ) : null}
+            {movementDebitStackedCategories.length === 0 ? <p className="pt-2 text-sm text-muted-foreground">ไม่มีข้อมูลเพียงพอสำหรับกราฟเดบิตระหว่างเดือน</p> : null}
           </CardContent>
         </Card>
       </div>
@@ -453,15 +512,17 @@ export function FinanceDashboard() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[1280px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-4 py-3 text-left font-medium">เดือน</th>
                   <th className="px-4 py-3 text-left font-medium">หน่วยบริการ</th>
-                  <th className="px-4 py-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดมาเดบิต</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดมาเครดิต</th>
                   <th className="px-4 py-3 text-right font-medium">เดบิตระหว่างเดือน</th>
                   <th className="px-4 py-3 text-right font-medium">เครดิตระหว่างเดือน</th>
-                  <th className="px-4 py-3 text-right font-medium">ยกยอดไป</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปเดบิต</th>
+                  <th className="px-4 py-3 text-right font-medium">ยกยอดไปเครดิต</th>
                 </tr>
               </thead>
               <tbody>
@@ -469,7 +530,8 @@ export function FinanceDashboard() {
                   <tr key={record.id} className="border-b transition-colors hover:bg-muted/30">
                     <td className="px-4 py-3">{record.month}</td>
                     <td className="px-4 py-3 font-medium">{record.unitName}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency((record.openingDebit || 0) - (record.openingCredit || 0))}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(record.openingDebit || 0)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(record.openingCredit || 0)}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
@@ -488,7 +550,8 @@ export function FinanceDashboard() {
                         {formatCurrency(record.movementCredit || 0)}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency((record.closingDebit || 0) - (record.closingCredit || 0))}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(record.closingDebit || 0)}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(record.closingCredit || 0)}</td>
                   </tr>
                 ))}
               </tbody>
