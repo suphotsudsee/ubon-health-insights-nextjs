@@ -162,6 +162,73 @@ function runNodeScript(args, label) {
   });
 }
 
+async function tableExists(tableName) {
+  const dbName = process.env.DB_NAME || "ubon_health";
+  const rows = await prisma.$queryRawUnsafe(
+    `
+      SELECT 1
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+      LIMIT 1
+    `,
+    dbName,
+    tableName,
+  );
+
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function normalizeFinanceAccountCodesBeforeDbPush() {
+  const hasFinanceAccounts = await tableExists("finance_accounts");
+  if (!hasFinanceAccounts) {
+    return;
+  }
+
+  await prisma.$executeRawUnsafe(`
+    UPDATE finance_accounts
+    SET account_code = NULL
+    WHERE account_code IS NOT NULL
+      AND TRIM(account_code) = ''
+  `);
+
+  const duplicates = await prisma.$queryRawUnsafe(`
+    SELECT
+      account_code AS accountCode,
+      COUNT(*) AS duplicateCount,
+      GROUP_CONCAT(id ORDER BY id SEPARATOR ', ') AS recordIds
+    FROM finance_accounts
+    WHERE account_code IS NOT NULL
+      AND TRIM(account_code) <> ''
+    GROUP BY account_code
+    HAVING COUNT(*) > 1
+    ORDER BY account_code
+  `);
+
+  if (!Array.isArray(duplicates) || duplicates.length === 0) {
+    return;
+  }
+
+  const summary = duplicates
+    .slice(0, 10)
+    .map((item) => `account_code="${item.accountCode}" count=${item.duplicateCount} ids=[${item.recordIds}]`)
+    .join("; ");
+
+  throw new Error(
+    `Cannot add unique constraint on finance_accounts.account_code because duplicate values already exist. ${summary}`,
+  );
+}
+
+async function runPrismaDbPush() {
+  await normalizeFinanceAccountCodesBeforeDbPush();
+
+  console.log("Running prisma db push...");
+  await runNodeScript(
+    ["node_modules/prisma/build/index.js", "db", "push", "--skip-generate", "--accept-data-loss"],
+    "prisma db push",
+  );
+}
+
 function thaiMonthName(month) {
   const names = [
     "มกราคม",
@@ -590,8 +657,7 @@ async function importKpiSeed() {
 async function bootstrap() {
   await ensureUtf8mb4Encoding();
 
-  console.log("Running prisma db push...");
-  await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
+  await runPrismaDbPush();
 
   if (!isEnabled(process.env.BOOTSTRAP_SEED)) {
     console.log("BOOTSTRAP_SEED is disabled, skipping production seed import.");
@@ -607,7 +673,7 @@ async function seedOnly() {
   try {
     await ensureUtf8mb4Encoding();
     console.log("Running prisma db push before manual seed...");
-    await runNodeScript(["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], "prisma db push");
+    await runPrismaDbPush();
 
     console.log("Running manual production seed import...");
     await importTransferSeed();
