@@ -243,6 +243,58 @@ function findDocumentMonth(rows: unknown[][]) {
   return null;
 }
 
+async function cleanupMisfiledNamedImports(params: {
+  healthUnitId: number;
+  fiscalYear: number;
+  month: number;
+  fileNames: string[];
+}) {
+  const normalizedFileNames = [...new Set(params.fileNames.map((fileName) => fileName.trim()).filter(Boolean))];
+  if (normalizedFileNames.length === 0) {
+    return [];
+  }
+
+  const candidates = await prisma.financeRecord.findMany({
+    where: {
+      healthUnitId: params.healthUnitId,
+      fiscalPeriod: {
+        fiscalYear: params.fiscalYear,
+        month: { not: params.month },
+      },
+    },
+    select: {
+      id: true,
+      notes: true,
+      fiscalPeriod: {
+        select: {
+          month: true,
+          monthNameTh: true,
+        },
+      },
+    },
+  });
+
+  const wrongMonthRecords = candidates.filter((record) =>
+    normalizedFileNames.some((fileName) => (record.notes || "").includes(fileName))
+  );
+
+  if (wrongMonthRecords.length === 0) {
+    return [];
+  }
+
+  await prisma.financeRecord.deleteMany({
+    where: {
+      id: { in: wrongMonthRecords.map((record) => record.id) },
+    },
+  });
+
+  return wrongMonthRecords.map((record) => ({
+    id: record.id,
+    month: record.fiscalPeriod.month,
+    monthNameTh: record.fiscalPeriod.monthNameTh,
+  }));
+}
+
 function detectWorkbookKind(buffer: Buffer): WorkbookKind {
   const workbook = XLSX.read(buffer, { type: "buffer" });
 
@@ -696,6 +748,13 @@ async function importNamedUnitFiles(
       continue;
     }
 
+    const cleanedWrongMonthRecords = await cleanupMisfiledNamedImports({
+      healthUnitId: unit.id,
+      fiscalYear: options.fiscalYear,
+      month: record.month,
+      fileNames: record.fileNames,
+    });
+
     const existing = await prisma.financeRecord.findUnique({
       where: {
         healthUnitId_fiscalPeriodId: {
@@ -779,6 +838,12 @@ async function importNamedUnitFiles(
         fiscalYear: options.fiscalYear,
         files: record.fileNames,
         status: "updated",
+        reason:
+          cleanedWrongMonthRecords.length > 0
+            ? `Removed wrong-month imports from ${cleanedWrongMonthRecords
+                .map((item) => item.monthNameTh || `month ${item.month}`)
+                .join(", ")} before updating`
+            : undefined,
       });
     } else {
       imported += 1;
@@ -790,6 +855,12 @@ async function importNamedUnitFiles(
         fiscalYear: options.fiscalYear,
         files: record.fileNames,
         status: "imported",
+        reason:
+          cleanedWrongMonthRecords.length > 0
+            ? `Removed wrong-month imports from ${cleanedWrongMonthRecords
+                .map((item) => item.monthNameTh || `month ${item.month}`)
+                .join(", ")} before importing`
+            : undefined,
       });
     }
   }
