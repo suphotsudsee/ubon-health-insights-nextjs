@@ -69,6 +69,17 @@ export type FinanceImportIssue = {
   reason: string;
 };
 
+export type FinanceImportDebugItem = {
+  sourceCode: string;
+  unitCode: string;
+  unitName: string;
+  month: number | null;
+  fiscalYear: number;
+  files: string[];
+  status: "imported" | "updated" | "skipped";
+  reason?: string;
+};
+
 export type FinanceImportResult = {
   processedFiles: number;
   imported: number;
@@ -76,6 +87,7 @@ export type FinanceImportResult = {
   skipped: number;
   detectedUnits: string[];
   issues: FinanceImportIssue[];
+  debugItems: FinanceImportDebugItem[];
 };
 
 export type FinanceImportPreview = {
@@ -578,6 +590,16 @@ async function importNamedUnitFiles(
 ): Promise<FinanceImportResult> {
   const records = collected.records;
   const issues: FinanceImportIssue[] = [...collected.issues];
+  const debugItems: FinanceImportDebugItem[] = collected.issues.map((issue) => ({
+    sourceCode: issue.sourceCode,
+    unitCode: issue.unitCode,
+    unitName: "",
+    month: issue.month,
+    fiscalYear: options.fiscalYear,
+    files: issue.sourceCode ? [issue.sourceCode] : [],
+    status: "skipped",
+    reason: issue.reason,
+  }));
   const months = [...new Set(records.map((record) => record.month))];
   const units = await prisma.healthUnit.findMany({
     select: { id: true, code: true, name: true },
@@ -606,7 +628,7 @@ async function importNamedUnitFiles(
 
     const matchedUnits = unitsByNormalizedName.get(record.normalizedUnitName) ?? [];
     if (matchedUnits.length !== 1) {
-      issues.push({
+      const issue = {
         sourceCode: record.sourceCode,
         unitCode: "",
         month: record.month,
@@ -614,6 +636,17 @@ async function importNamedUnitFiles(
           matchedUnits.length === 0
             ? `Health unit ${record.unitName} not found`
             : `Health unit ${record.unitName} is ambiguous`,
+      };
+      issues.push(issue);
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: "",
+        unitName: record.unitName,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: record.fileNames,
+        status: "skipped",
+        reason: issue.reason,
       });
       continue;
     }
@@ -621,11 +654,22 @@ async function importNamedUnitFiles(
     const unit = matchedUnits[0];
     const period = periodMap.get(record.month);
     if (!period) {
-      issues.push({
+      const issue = {
         sourceCode: record.sourceCode,
         unitCode: unit.code,
         month: record.month,
         reason: `Fiscal period for year ${options.fiscalYear} month ${record.month} not found`,
+      };
+      issues.push(issue);
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: unit.code,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: record.fileNames,
+        status: "skipped",
+        reason: issue.reason,
       });
       continue;
     }
@@ -705,8 +749,26 @@ async function importNamedUnitFiles(
 
     if (existing) {
       updated += 1;
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: unit.code,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: record.fileNames,
+        status: "updated",
+      });
     } else {
       imported += 1;
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: unit.code,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: record.fileNames,
+        status: "imported",
+      });
     }
   }
 
@@ -717,6 +779,7 @@ async function importNamedUnitFiles(
     skipped: issues.length,
     detectedUnits: [...new Set(records.map((record) => record.unitName))],
     issues,
+    debugItems,
   };
 }
 
@@ -1118,6 +1181,16 @@ export async function importFinanceWorkbook(
   let imported = 0;
   let updated = 0;
   const issues = [...parsed.issues];
+  const debugItems: FinanceImportDebugItem[] = parsed.issues.map((issue) => ({
+    sourceCode: issue.sourceCode,
+    unitCode: issue.unitCode,
+    unitName: "",
+    month: issue.month,
+    fiscalYear: options.fiscalYear,
+    files: issue.sourceCode ? [issue.sourceCode] : [],
+    status: "skipped",
+    reason: issue.reason,
+  }));
 
   for (const record of parsed.records) {
     await syncFinanceAccountsFromBreakdown("income", Object.keys(record.incomeBreakdown || {}));
@@ -1125,22 +1198,44 @@ export async function importFinanceWorkbook(
 
     const unit = unitMap.get(record.unitCode);
     if (!unit) {
-      issues.push({
+      const issue = {
         sourceCode: record.sourceCode,
         unitCode: record.unitCode,
         month: record.month,
         reason: `Health unit code ${record.unitCode} not found`,
+      };
+      issues.push(issue);
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: record.unitCode,
+        unitName: "",
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: [record.sourceCode],
+        status: "skipped",
+        reason: issue.reason,
       });
       continue;
     }
 
     const period = periodMap.get(record.month);
     if (!period) {
-      issues.push({
+      const issue = {
         sourceCode: record.sourceCode,
         unitCode: record.unitCode,
         month: record.month,
         reason: `Fiscal period for year ${options.fiscalYear} month ${record.month} not found`,
+      };
+      issues.push(issue);
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: record.unitCode,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: [record.sourceCode],
+        status: "skipped",
+        reason: issue.reason,
       });
       continue;
     }
@@ -1190,8 +1285,26 @@ export async function importFinanceWorkbook(
 
     if (existing) {
       updated += 1;
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: unit.code,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: [record.sourceCode],
+        status: "updated",
+      });
     } else {
       imported += 1;
+      debugItems.push({
+        sourceCode: record.sourceCode,
+        unitCode: unit.code,
+        unitName: unit.name,
+        month: record.month,
+        fiscalYear: options.fiscalYear,
+        files: [record.sourceCode],
+        status: "imported",
+      });
     }
   }
 
@@ -1202,6 +1315,7 @@ export async function importFinanceWorkbook(
     skipped: issues.length,
     detectedUnits: units.map((unit) => unit.name),
     issues,
+    debugItems,
   };
 }
 
@@ -1220,6 +1334,16 @@ export async function importFinanceFiles(
       skipped: 1,
       detectedUnits: [],
       issues: [{ sourceCode: "", unitCode: "", month: null, reason: "No Excel files provided" }],
+      debugItems: [{
+        sourceCode: "",
+        unitCode: "",
+        unitName: "",
+        month: null,
+        fiscalYear: options.fiscalYear,
+        files: [],
+        status: "skipped",
+        reason: "No Excel files provided",
+      }],
     };
   }
 
@@ -1227,6 +1351,7 @@ export async function importFinanceFiles(
   const expenseDocumentFiles: FinanceImportFile[] = [];
   const trialBalanceFiles: FinanceImportFile[] = [];
   const issues: FinanceImportIssue[] = [];
+  const debugItems: FinanceImportDebugItem[] = [];
   let imported = 0;
   let updated = 0;
   const detectedUnits = new Set<string>();
@@ -1246,6 +1371,16 @@ export async function importFinanceFiles(
         month: null,
         reason: `Unsupported workbook format in file ${file.name}`,
       });
+      debugItems.push({
+        sourceCode: file.name,
+        unitCode: "",
+        unitName: "",
+        month: null,
+        fiscalYear: options.fiscalYear,
+        files: [file.name],
+        status: "skipped",
+        reason: `Unsupported workbook format in file ${file.name}`,
+      });
     }
   }
 
@@ -1255,6 +1390,7 @@ export async function importFinanceFiles(
     updated += result.updated;
     result.detectedUnits.forEach((unit) => detectedUnits.add(unit));
     issues.push(...result.issues.map((issue) => ({ ...issue, sourceCode: issue.sourceCode || file.name })));
+    debugItems.push(...result.debugItems);
   }
 
   if (expenseDocumentFiles.length > 0) {
@@ -1263,6 +1399,7 @@ export async function importFinanceFiles(
     updated += result.updated;
     result.detectedUnits.forEach((unit) => detectedUnits.add(unit));
     issues.push(...result.issues);
+    debugItems.push(...result.debugItems);
   }
 
   if (trialBalanceFiles.length > 0) {
@@ -1271,6 +1408,7 @@ export async function importFinanceFiles(
     updated += result.updated;
     result.detectedUnits.forEach((unit) => detectedUnits.add(unit));
     issues.push(...result.issues);
+    debugItems.push(...result.debugItems);
   }
 
   return {
@@ -1280,5 +1418,11 @@ export async function importFinanceFiles(
     skipped: issues.length,
     detectedUnits: Array.from(detectedUnits).sort((a, b) => a.localeCompare(b, "th")),
     issues,
+    debugItems: debugItems.sort((a, b) => {
+      const fileCompare = (a.files[0] || a.sourceCode).localeCompare(b.files[0] || b.sourceCode, "th");
+      if (fileCompare !== 0) return fileCompare;
+      if ((a.month ?? 0) !== (b.month ?? 0)) return (a.month ?? 0) - (b.month ?? 0);
+      return a.unitName.localeCompare(b.unitName, "th");
+    }),
   };
 }

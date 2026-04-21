@@ -47,6 +47,16 @@ type ImportResponse = {
   updated: number;
   skipped: number;
   detectedUnits: string[];
+  debugItems: Array<{
+    sourceCode: string;
+    unitCode: string;
+    unitName: string;
+    month: number | null;
+    fiscalYear: number;
+    files: string[];
+    status: "imported" | "updated" | "skipped";
+    reason?: string;
+  }>;
   issues: Array<{
     sourceCode: string;
     unitCode: string;
@@ -117,12 +127,30 @@ function previewStatusLabel(status: ImportPreviewItem["status"]) {
   }
 }
 
-function getNetOpening(record: FinanceRecordItem) {
-  return (record.openingDebit || 0) - (record.openingCredit || 0);
+function debugStatusLabel(status: "imported" | "updated" | "skipped") {
+  switch (status) {
+    case "imported":
+      return "Imported";
+    case "updated":
+      return "Updated";
+    case "skipped":
+      return "Skipped";
+    default:
+      return status;
+  }
 }
 
-function getNetClosing(record: FinanceRecordItem) {
-  return (record.closingDebit || 0) - (record.closingCredit || 0);
+function debugStatusClassName(status: "imported" | "updated" | "skipped") {
+  switch (status) {
+    case "imported":
+      return "bg-emerald-100 text-emerald-700";
+    case "updated":
+      return "bg-sky-100 text-sky-700";
+    case "skipped":
+      return "bg-amber-100 text-amber-700";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
 }
 
 export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPeriod }: Props) {
@@ -196,9 +224,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
     [monthlyImportRows]
   );
 
-  const statusTotalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(monthlyImportRows.length / statusPageSize));
-  }, [monthlyImportRows.length]);
+  const statusTotalPages = useMemo(() => Math.max(1, Math.ceil(monthlyImportRows.length / statusPageSize)), [monthlyImportRows.length]);
 
   const paginatedMonthlyImportRows = useMemo(() => {
     const startIndex = (statusPage - 1) * statusPageSize;
@@ -218,12 +244,21 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
   const totals = useMemo(() => {
     return filteredRecords.reduce(
       (sum, record) => ({
-        opening: sum.opening + getNetOpening(record),
+        openingDebit: sum.openingDebit + (record.openingDebit || 0),
+        openingCredit: sum.openingCredit + (record.openingCredit || 0),
         movementDebit: sum.movementDebit + (record.movementDebit || 0),
         movementCredit: sum.movementCredit + (record.movementCredit || 0),
-        closing: sum.closing + getNetClosing(record),
+        closingDebit: sum.closingDebit + (record.closingDebit || 0),
+        closingCredit: sum.closingCredit + (record.closingCredit || 0),
       }),
-      { opening: 0, movementDebit: 0, movementCredit: 0, closing: 0 }
+      {
+        openingDebit: 0,
+        openingCredit: 0,
+        movementDebit: 0,
+        movementCredit: 0,
+        closingDebit: 0,
+        closingCredit: 0,
+      }
     );
   }, [filteredRecords]);
 
@@ -404,25 +439,25 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">จัดการข้อมูลงบทดลอง</h2>
         <p className="text-sm text-muted-foreground">
-          หน้านี้ใช้สำหรับนำเข้า ตรวจสอบความครบถ้วน และติดตามสถานะงบทดลองรายเดือนของทุกหน่วยบริการ โดยไม่ใช้ฟอร์มรายรับหรือรายจ่ายแบบกรอกมืออีกต่อไป
+          หน้านี้ใช้สำหรับนำเข้า ตรวจสอบความครบถ้วน และติดตามสถานะงบทดลองรายเดือนของทุกหน่วยบริการ โดยยึดโครงสร้างเดบิตและเครดิตจากงบทดลองโดยตรง
         </p>
       </div>
 
       {message ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
       {error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div> : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="หน่วยบริการทั้งหมด" value={`${units.length} แห่ง`} />
         <SummaryCard label={`นำเข้าแล้ว (${formatMonthLabel(selectedMonthPeriod)})`} value={`${importedUnitCount} แห่ง`} />
         <SummaryCard label={`ยังไม่ส่ง (${formatMonthLabel(selectedMonthPeriod)})`} value={`${missingUnitCount} แห่ง`} />
-        <SummaryCard label={`ไฟล์ที่เลือก`} value={`${selectedFiles.length} ไฟล์`} />
+        <SummaryCard label="ไฟล์ที่เลือก" value={`${selectedFiles.length} ไฟล์`} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>นำเข้างบทดลองรายเดือน</CardTitle>
           <CardDescription>
-            ใช้ไฟล์งบทดลองเป็นข้อมูลตั้งต้นของรายงานทั้งหมด เช่น ยกยอดมา เดบิต/เครดิตระหว่างเดือน และยกยอดไป
+            ใช้ไฟล์งบทดลองเป็นข้อมูลตั้งต้นของรายงานทั้งหมด เช่น ยกยอดมา เดบิตระหว่างเดือน เครดิตระหว่างเดือน และยอดยกไป
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -557,11 +592,13 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         </Card>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <SummaryCard label="ยกยอดมา (สุทธิ)" value={formatAmount(totals.opening)} />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <SummaryCard label="ยกยอดมาเดบิต" value={formatAmount(totals.openingDebit)} />
+        <SummaryCard label="ยกยอดมาเครดิต" value={formatAmount(totals.openingCredit)} />
         <SummaryCard label="เดบิตระหว่างเดือน" value={formatAmount(totals.movementDebit)} />
         <SummaryCard label="เครดิตระหว่างเดือน" value={formatAmount(totals.movementCredit)} />
-        <SummaryCard label="ยกยอดไป (สุทธิ)" value={formatAmount(totals.closing)} />
+        <SummaryCard label="ยกยอดไปเดบิต" value={formatAmount(totals.closingDebit)} />
+        <SummaryCard label="ยกยอดไปเครดิต" value={formatAmount(totals.closingCredit)} />
       </div>
 
       <Card>
@@ -578,15 +615,17 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[1180px] text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="pb-3 font-medium">หน่วยบริการ</th>
                   <th className="pb-3 font-medium">สถานะ</th>
-                  <th className="pb-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมาเดบิต</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมาเครดิต</th>
                   <th className="pb-3 text-right font-medium">เดบิตระหว่างเดือน</th>
                   <th className="pb-3 text-right font-medium">เครดิตระหว่างเดือน</th>
-                  <th className="pb-3 text-right font-medium">ยกยอดไป</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไปเดบิต</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไปเครดิต</th>
                 </tr>
               </thead>
               <tbody>
@@ -601,10 +640,12 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                         {row.status === "imported" ? "นำเข้าแล้ว" : "รอส่ง"}
                       </span>
                     </td>
-                    <td className="py-4 text-right">{row.record ? formatAmount(getNetOpening(row.record)) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.openingDebit) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.openingCredit) : "-"}</td>
                     <td className="py-4 text-right">{row.record ? formatAmount(row.record.movementDebit) : "-"}</td>
                     <td className="py-4 text-right">{row.record ? formatAmount(row.record.movementCredit) : "-"}</td>
-                    <td className="py-4 text-right">{row.record ? formatAmount(getNetClosing(row.record)) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.closingDebit) : "-"}</td>
+                    <td className="py-4 text-right">{row.record ? formatAmount(row.record.closingCredit) : "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -656,15 +697,17 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-sm">
+            <table className="w-full min-w-[1280px] text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="pb-3 font-medium">หน่วยบริการ</th>
                   <th className="pb-3 font-medium">งวด</th>
-                  <th className="pb-3 text-right font-medium">ยกยอดมา</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมาเดบิต</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดมาเครดิต</th>
                   <th className="pb-3 text-right font-medium">เดบิตระหว่างเดือน</th>
                   <th className="pb-3 text-right font-medium">เครดิตระหว่างเดือน</th>
-                  <th className="pb-3 text-right font-medium">ยกยอดไป</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไปเดบิต</th>
+                  <th className="pb-3 text-right font-medium">ยกยอดไปเครดิต</th>
                   <th className="pb-3 font-medium">ผู้บันทึก</th>
                   <th className="pb-3 text-right font-medium">จัดการ</th>
                 </tr>
@@ -679,10 +722,12 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
                     <td className="py-4 text-muted-foreground">
                       {record.monthNameTh} {record.fiscalYear}
                     </td>
-                    <td className="py-4 text-right">{formatAmount(getNetOpening(record))}</td>
+                    <td className="py-4 text-right">{formatAmount(record.openingDebit)}</td>
+                    <td className="py-4 text-right">{formatAmount(record.openingCredit)}</td>
                     <td className="py-4 text-right">{formatAmount(record.movementDebit)}</td>
                     <td className="py-4 text-right">{formatAmount(record.movementCredit)}</td>
-                    <td className="py-4 text-right">{formatAmount(getNetClosing(record))}</td>
+                    <td className="py-4 text-right">{formatAmount(record.closingDebit)}</td>
+                    <td className="py-4 text-right">{formatAmount(record.closingCredit)}</td>
                     <td className="py-4 text-muted-foreground">{record.recorder || "-"}</td>
                     <td className="py-4">
                       <div className="flex justify-end gap-2">
@@ -717,6 +762,53 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {lastImport.debugItems.length > 0 ? (
+              <div>
+                <p className="mb-2 text-sm font-medium">Debug import result</p>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full min-w-[1100px] text-sm">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b text-left">
+                        <th className="px-4 py-3 font-medium">สถานะ</th>
+                        <th className="px-4 py-3 font-medium">ไฟล์</th>
+                        <th className="px-4 py-3 font-medium">หน่วยบริการ</th>
+                        <th className="px-4 py-3 font-medium">งวด</th>
+                        <th className="px-4 py-3 font-medium">เหตุผล</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lastImport.debugItems.map((item, index) => (
+                        <tr key={`${item.sourceCode}-${item.unitCode}-${item.month}-${index}`} className="border-b last:border-b-0">
+                          <td className="px-4 py-3">
+                            <span className={`rounded-full px-2 py-1 text-xs font-medium ${debugStatusClassName(item.status)}`}>
+                              {debugStatusLabel(item.status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="space-y-1">
+                              {(item.files.length > 0 ? item.files : [item.sourceCode]).map((file) => (
+                                <div key={file} className="text-xs text-muted-foreground">
+                                  {file}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{item.unitCode || "-"}</div>
+                            <div className="text-muted-foreground">{item.unitName || "-"}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.month ? `เดือน ${item.month} / ${item.fiscalYear}` : `- / ${item.fiscalYear}`}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{item.reason || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
+
             {lastImport.detectedUnits.length > 0 ? (
               <div>
                 <p className="mb-2 text-sm font-medium">หน่วยบริการที่ตรวจพบ</p>
