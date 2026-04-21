@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const mode = String(formData.get("mode") ?? "import").trim().toLowerCase();
 
   if (files.length === 0) {
-    return NextResponse.json({ error: "At least one Excel file is required" }, { status: 400 });
+    return NextResponse.json({ error: "At least one finance file is required" }, { status: 400 });
   }
 
   const fiscalYear = Number(fiscalYearValue);
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error importing finance workbook:", error);
-    return NextResponse.json({ error: "Failed to import finance workbook" }, { status: 500 });
+    console.error("Error importing finance files:", error);
+    return NextResponse.json({ error: "Failed to import finance files" }, { status: 500 });
   }
 }

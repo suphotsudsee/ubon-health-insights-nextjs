@@ -1,4 +1,5 @@
 ﻿import * as XLSX from "xlsx";
+import { PDFParse } from "pdf-parse";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { syncFinanceAccountsFromBreakdown } from "@/actions/finance-accounts";
@@ -140,6 +141,10 @@ function trimCell(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function isPdfFile(fileName: string) {
+  return /\.pdf$/i.test(fileName);
+}
+
 function normalizeAccountCode(value: string) {
   return value.replace(/[^\d.]/g, "").trim();
 }
@@ -240,6 +245,37 @@ function findDocumentMonth(rows: unknown[][]) {
       }
     }
   }
+  return null;
+}
+
+function findDocumentUnitNameFromText(text: string) {
+  const lines = text.split(/\r?\n/u);
+  return (
+    lines.find((line) => line.includes("โรงพยาบาลส่งเสริมสุขภาพตำบล") || line.includes("รพ.สต."))?.trim() || ""
+  );
+}
+
+function findDocumentMonthFromText(text: string) {
+  const lines = text.split(/\r?\n/u);
+
+  for (const line of lines) {
+    if (!line.includes("ณ วันที่")) {
+      continue;
+    }
+
+    const month = parseMonthFromText(line);
+    if (month) {
+      return month;
+    }
+  }
+
+  for (const line of lines) {
+    const month = parseMonthFromText(line);
+    if (month) {
+      return month;
+    }
+  }
+
   return null;
 }
 
@@ -650,6 +686,176 @@ export function parseTrialBalanceWorkbook(buffer: Buffer, fileName: string) {
   };
 }
 
+async function parseTrialBalancePdf(buffer: Buffer, fileName: string) {
+  const parser = new PDFParse({ data: buffer });
+
+  try {
+    const [textResult, tableResult] = await Promise.all([
+      parser.getText({ pageJoiner: "\n" }),
+      parser.getTable(),
+    ]);
+
+    const unitName = findDocumentUnitNameFromText(textResult.text);
+    const normalizedUnitName = normalizeUnitName(unitName);
+    const month = findDocumentMonthFromText(textResult.text);
+    const sourceCode = fileName;
+    const incomeBreakdown: Record<string, number> = {};
+    const expenseBreakdown: Record<string, number> = {};
+    const trialBalanceRows: Array<Record<string, unknown>> = [];
+    let income = 0;
+    let expense = 0;
+    let openingDebit = 0;
+    let openingCredit = 0;
+    let movementDebit = 0;
+    let movementCredit = 0;
+    let closingDebit = 0;
+    let closingCredit = 0;
+
+    for (const page of tableResult.pages || []) {
+      for (const table of page.tables || []) {
+        for (const rawRow of table) {
+          if (!Array.isArray(rawRow)) {
+            continue;
+          }
+
+          const row = rawRow.map((cell) => trimCell(cell));
+          if (row.length < 8) {
+            continue;
+          }
+
+          const accountName = row[0];
+          const accountCode = row[1];
+
+          if (
+            !accountName ||
+            !accountCode ||
+            accountName === "ชื่อบัญชี" ||
+            accountName === "เดบิต" ||
+            accountName.startsWith("รวม") ||
+            !/^\d[\d.]+$/u.test(accountCode)
+          ) {
+            continue;
+          }
+
+          const openingDebitValue = toNumber(row[2]);
+          const openingCreditValue = toNumber(row[3]);
+          const debit = toNumber(row[4]);
+          const credit = toNumber(row[5]);
+          const closingDebitValue = toNumber(row[6]);
+          const closingCreditValue = toNumber(row[7]);
+
+          if (
+            openingDebitValue <= 0 &&
+            openingCreditValue <= 0 &&
+            debit <= 0 &&
+            credit <= 0 &&
+            closingDebitValue <= 0 &&
+            closingCreditValue <= 0
+          ) {
+            continue;
+          }
+
+          openingDebit += openingDebitValue;
+          openingCredit += openingCreditValue;
+          movementDebit += debit;
+          movementCredit += credit;
+          closingDebit += closingDebitValue;
+          closingCredit += closingCreditValue;
+
+          trialBalanceRows.push({
+            accountName,
+            accountCode,
+            openingDebit: openingDebitValue,
+            openingCredit: openingCreditValue,
+            movementDebit: debit,
+            movementCredit: credit,
+            closingDebit: closingDebitValue,
+            closingCredit: closingCreditValue,
+          });
+
+          const debitClass = classifyVoucherEntry(accountCode, "debit");
+          const creditClass = classifyVoucherEntry(accountCode, "credit");
+          const breakdownKey = accountCode ? `${accountCode} ${accountName}` : accountName;
+
+          if (debit > 0 && debitClass.kind === "income") {
+            const signedAmount = debit * debitClass.multiplier;
+            income += signedAmount;
+            incomeBreakdown[breakdownKey] = (incomeBreakdown[breakdownKey] ?? 0) + signedAmount;
+          } else if (debit > 0 && debitClass.kind === "expense") {
+            const signedAmount = debit * debitClass.multiplier;
+            expense += signedAmount;
+            expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + signedAmount;
+          }
+
+          if (credit > 0 && creditClass.kind === "income") {
+            const signedAmount = credit * creditClass.multiplier;
+            income += signedAmount;
+            incomeBreakdown[breakdownKey] = (incomeBreakdown[breakdownKey] ?? 0) + signedAmount;
+          } else if (credit > 0 && creditClass.kind === "expense") {
+            const signedAmount = credit * creditClass.multiplier;
+            expense += signedAmount;
+            expenseBreakdown[breakdownKey] = (expenseBreakdown[breakdownKey] ?? 0) + signedAmount;
+          }
+        }
+      }
+    }
+
+    const hasTrialBalanceTotals =
+      openingDebit > 0 ||
+      openingCredit > 0 ||
+      movementDebit > 0 ||
+      movementCredit > 0 ||
+      closingDebit > 0 ||
+      closingCredit > 0 ||
+      trialBalanceRows.length > 0;
+
+    return {
+      record:
+        unitName && normalizedUnitName && month && hasTrialBalanceTotals
+          ? {
+              sourceCode,
+              unitName,
+              normalizedUnitName,
+              month,
+              income,
+              expense,
+              incomeBreakdown,
+              expenseBreakdown,
+              openingDebit,
+              openingCredit,
+              movementDebit,
+              movementCredit,
+              closingDebit,
+              closingCredit,
+              trialBalanceRows,
+              fileNames: [fileName],
+            }
+          : null,
+      issues: [
+        ...(!unitName
+          ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect unit name in file ${fileName}` }]
+          : []),
+        ...(!month
+          ? [{ sourceCode, unitCode: "", month: null, reason: `Cannot detect month in file ${fileName}` }]
+          : []),
+        ...(!hasTrialBalanceTotals
+          ? [{ sourceCode, unitCode: "", month: month ?? null, reason: `Cannot detect trial balance totals in file ${fileName}` }]
+          : []),
+      ] satisfies FinanceImportIssue[],
+    };
+  } finally {
+    await parser.destroy().catch(() => undefined);
+  }
+}
+
+async function parseTrialBalanceFile(buffer: Buffer, fileName: string) {
+  if (isPdfFile(fileName)) {
+    return parseTrialBalancePdf(buffer, fileName);
+  }
+
+  return parseTrialBalanceWorkbook(buffer, fileName);
+}
+
 async function importNamedUnitFiles(
   collected: {
     records: ParsedFinanceDocumentGroup[];
@@ -899,7 +1105,7 @@ async function importTrialBalanceFiles(
   }
 ): Promise<FinanceImportResult> {
   return importNamedUnitFiles(
-    collectTrialBalanceRecords(files),
+    await collectTrialBalanceRecords(files),
     files,
     options,
     "trial balance files",
@@ -963,12 +1169,12 @@ function collectExpenseDocumentRecords(files: FinanceImportFile[]) {
   };
 }
 
-function collectTrialBalanceRecords(files: FinanceImportFile[]) {
+async function collectTrialBalanceRecords(files: FinanceImportFile[]) {
   const grouped = new Map<string, ParsedFinanceDocumentGroup>();
   const issues: FinanceImportIssue[] = [];
 
   for (const file of files) {
-    const parsed = parseTrialBalanceWorkbook(file.buffer, file.name);
+    const parsed = await parseTrialBalanceFile(file.buffer, file.name);
     issues.push(...parsed.issues);
 
     if (!parsed.record) {
@@ -1039,20 +1245,24 @@ export async function previewFinanceFiles(
   const detectedUnits = new Set<string>();
 
   for (const file of files) {
-    const kind = detectWorkbookKind(file.buffer);
-    if (kind === "summary") {
-      summaryFiles.push(file);
-    } else if (kind === "expense-document") {
-      expenseDocumentFiles.push(file);
-    } else if (kind === "trial-balance") {
+    if (isPdfFile(file.name)) {
       trialBalanceFiles.push(file);
     } else {
-      issues.push({
-        sourceCode: file.name,
-        unitCode: "",
-        month: null,
-        reason: `Unsupported workbook format in file ${file.name}`,
-      });
+      const kind = detectWorkbookKind(file.buffer);
+      if (kind === "summary") {
+        summaryFiles.push(file);
+      } else if (kind === "expense-document") {
+        expenseDocumentFiles.push(file);
+      } else if (kind === "trial-balance") {
+        trialBalanceFiles.push(file);
+      } else {
+        issues.push({
+          sourceCode: file.name,
+          unitCode: "",
+          month: null,
+          reason: `Unsupported finance file format in file ${file.name}`,
+        });
+      }
     }
   }
 
@@ -1061,7 +1271,7 @@ export async function previewFinanceFiles(
     parsed: parseFinanceWorkbook(file.buffer),
   }));
   const expenseCollected = collectExpenseDocumentRecords(expenseDocumentFiles);
-  const trialBalanceCollected = collectTrialBalanceRecords(trialBalanceFiles);
+  const trialBalanceCollected = await collectTrialBalanceRecords(trialBalanceFiles);
   issues.push(...summaryResults.flatMap((result) => result.parsed.issues));
   issues.push(...expenseCollected.issues);
   issues.push(...trialBalanceCollected.issues);
@@ -1450,30 +1660,34 @@ export async function importFinanceFiles(
   const detectedUnits = new Set<string>();
 
   for (const file of files) {
-    const kind = detectWorkbookKind(file.buffer);
-    if (kind === "summary") {
-      summaryFiles.push(file);
-    } else if (kind === "expense-document") {
-      expenseDocumentFiles.push(file);
-    } else if (kind === "trial-balance") {
+    if (isPdfFile(file.name)) {
       trialBalanceFiles.push(file);
     } else {
-      issues.push({
-        sourceCode: file.name,
-        unitCode: "",
-        month: null,
-        reason: `Unsupported workbook format in file ${file.name}`,
-      });
-      debugItems.push({
-        sourceCode: file.name,
-        unitCode: "",
-        unitName: "",
-        month: null,
-        fiscalYear: options.fiscalYear,
-        files: [file.name],
-        status: "skipped",
-        reason: `Unsupported workbook format in file ${file.name}`,
-      });
+      const kind = detectWorkbookKind(file.buffer);
+      if (kind === "summary") {
+        summaryFiles.push(file);
+      } else if (kind === "expense-document") {
+        expenseDocumentFiles.push(file);
+      } else if (kind === "trial-balance") {
+        trialBalanceFiles.push(file);
+      } else {
+        issues.push({
+          sourceCode: file.name,
+          unitCode: "",
+          month: null,
+          reason: `Unsupported finance file format in file ${file.name}`,
+        });
+        debugItems.push({
+          sourceCode: file.name,
+          unitCode: "",
+          unitName: "",
+          month: null,
+          fiscalYear: options.fiscalYear,
+          files: [file.name],
+          status: "skipped",
+          reason: `Unsupported finance file format in file ${file.name}`,
+        });
+      }
     }
   }
 

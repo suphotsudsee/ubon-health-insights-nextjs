@@ -328,7 +328,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
   function handleFileSelection(files: FileList | null) {
     if (!files) return;
-    setSelectedFiles(Array.from(files).filter((file) => file.size > 0));
+    setSelectedFiles(Array.from(files).filter((file) => file.size > 0 && /\.pdf$/i.test(file.name)));
     setMessage("");
     setError("");
   }
@@ -490,8 +490,8 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </select>
             </Field>
 
-            <Field label="เลือกไฟล์ Excel">
-              <Input ref={fileInputRef} type="file" accept=".xlsx,.xls" multiple onChange={(event) => handleFileSelection(event.target.files)} />
+            <Field label="เลือกไฟล์ PDF งบทดลอง">
+              <Input ref={fileInputRef} type="file" accept=".pdf,application/pdf" multiple onChange={(event) => handleFileSelection(event.target.files)} />
             </Field>
 
             <Field label="หรือเลือกทั้งโฟลเดอร์">
