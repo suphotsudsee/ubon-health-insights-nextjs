@@ -1,8 +1,14 @@
 ﻿import * as XLSX from "xlsx";
-import { PDFParse } from "pdf-parse";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { syncFinanceAccountsFromBreakdown } from "@/actions/finance-accounts";
+
+let pdfParseModulePromise: Promise<typeof import("pdf-parse")> | null = null;
+
+async function getPdfParseModule() {
+  pdfParseModulePromise ??= import("pdf-parse");
+  return pdfParseModulePromise;
+}
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | undefined {
   if (value === undefined) {
@@ -687,6 +693,7 @@ export function parseTrialBalanceWorkbook(buffer: Buffer, fileName: string) {
 }
 
 async function parseTrialBalancePdf(buffer: Buffer, fileName: string) {
+  const { PDFParse } = await getPdfParseModule();
   const parser = new PDFParse({ data: buffer });
 
   try {

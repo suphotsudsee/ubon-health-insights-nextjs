@@ -153,6 +153,20 @@ function debugStatusClassName(status: "imported" | "updated" | "skipped") {
   }
 }
 
+async function readResponseBody<T>(response: Response): Promise<(T & { error?: string }) | { error?: string }> {
+  const raw = await response.text();
+
+  if (!raw.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(raw) as T & { error?: string };
+  } catch {
+    return { error: raw };
+  }
+}
+
 export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPeriod }: Props) {
   const statusPageSize = 10;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -314,7 +328,10 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
       setError("");
       const year = selectedYear ? `&fiscalYear=${selectedYear}` : "";
       const response = await fetch(`/api/finance/records?pageSize=500${year}`, { cache: "no-store" });
-      const body = (await response.json()) as { records?: FinanceRecordItem[]; error?: string };
+      const body = (await readResponseBody<{ records?: FinanceRecordItem[] }>(response)) as {
+        records?: FinanceRecordItem[];
+        error?: string;
+      };
       if (!response.ok) {
         throw new Error(body.error || "โหลดข้อมูลงบทดลองไม่สำเร็จ");
       }
@@ -356,7 +373,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         body: formData,
       });
 
-      const body = (await response.json()) as ImportPreviewResponse & { error?: string };
+      const body = (await readResponseBody<ImportPreviewResponse>(response)) as ImportPreviewResponse & { error?: string };
       if (!response.ok) {
         throw new Error(body.error || "ตรวจสอบไฟล์งบทดลองไม่สำเร็จ");
       }
@@ -393,7 +410,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
         body: formData,
       });
 
-      const body = (await response.json()) as ImportResponse & { error?: string };
+      const body = (await readResponseBody<ImportResponse>(response)) as ImportResponse & { error?: string };
       if (!response.ok) {
         throw new Error(body.error || "นำเข้างบทดลองไม่สำเร็จ");
       }
@@ -422,7 +439,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
 
     try {
       const response = await fetch(`/api/finance/records/${record.id}`, { method: "DELETE" });
-      const body = (await response.json()) as { error?: string };
+      const body = await readResponseBody(response);
       if (!response.ok) {
         throw new Error(body.error || "ลบข้อมูลงบทดลองไม่สำเร็จ");
       }

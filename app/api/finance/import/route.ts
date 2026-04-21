@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  importFinanceFiles,
-  previewFinanceFiles,
-  type FinanceImportFile,
-} from "@/lib/finance-import";
+import type { FinanceImportFile } from "@/lib/finance-import";
 
 function normalizeFiles(formData: FormData) {
   const multiFiles = formData
@@ -32,22 +28,23 @@ async function toImportFiles(files: File[]): Promise<FinanceImportFile[]> {
 }
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const files = normalizeFiles(formData);
-  const fiscalYearValue = formData.get("fiscalYear");
-  const recorder = String(formData.get("recorder") ?? "").trim() || undefined;
-  const mode = String(formData.get("mode") ?? "import").trim().toLowerCase();
-
-  if (files.length === 0) {
-    return NextResponse.json({ error: "At least one finance file is required" }, { status: 400 });
-  }
-
-  const fiscalYear = Number(fiscalYearValue);
-  if (!Number.isInteger(fiscalYear) || fiscalYear <= 0) {
-    return NextResponse.json({ error: "Fiscal year is required" }, { status: 400 });
-  }
-
   try {
+    const formData = await request.formData();
+    const files = normalizeFiles(formData);
+    const fiscalYearValue = formData.get("fiscalYear");
+    const recorder = String(formData.get("recorder") ?? "").trim() || undefined;
+    const mode = String(formData.get("mode") ?? "import").trim().toLowerCase();
+
+    if (files.length === 0) {
+      return NextResponse.json({ error: "At least one finance file is required" }, { status: 400 });
+    }
+
+    const fiscalYear = Number(fiscalYearValue);
+    if (!Number.isInteger(fiscalYear) || fiscalYear <= 0) {
+      return NextResponse.json({ error: "Fiscal year is required" }, { status: 400 });
+    }
+
+    const { importFinanceFiles, previewFinanceFiles } = await import("@/lib/finance-import");
     const importFiles = await toImportFiles(files);
 
     if (mode === "preview") {
@@ -59,7 +56,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to import finance files";
     console.error("Error importing finance files:", error);
-    return NextResponse.json({ error: "Failed to import finance files" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
