@@ -507,7 +507,7 @@ export function FinanceSettingsSection({ units, fiscalPeriods, years, currentPer
               </select>
             </Field>
 
-            <Field label="เลือกไฟล์ PDF งบทดลอง">
+            <Field label="เลือกไฟล์ xls/xlsx งบทดลอง">
               <Input ref={fileInputRef} type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple onChange={(event) => handleFileSelection(event.target.files)} />
             </Field>
 
