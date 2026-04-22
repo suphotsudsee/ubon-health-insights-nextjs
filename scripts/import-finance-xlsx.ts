@@ -26,7 +26,7 @@ async function main() {
   const target = statSync(filePath);
   const files = target.isDirectory()
     ? (await readdir(filePath))
-        .filter((fileName) => /\.(pdf|xlsx|xls)$/i.test(fileName))
+        .filter((fileName) => /\.(xlsx|xls)$/i.test(fileName))
         .map((fileName) => ({
           name: fileName,
           fullPath: path.join(filePath, fileName),
@@ -34,7 +34,7 @@ async function main() {
     : [{ name: path.basename(filePath), fullPath: filePath }];
 
   if (files.length === 0) {
-    throw new Error("No supported finance files found");
+    throw new Error("No supported finance workbook files found");
   }
 
   const payload = await Promise.all(
