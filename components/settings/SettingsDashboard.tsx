@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Building2,
@@ -494,6 +494,7 @@ export function SettingsDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isImportingUsers, setIsImportingUsers] = useState(false);
   const [isImportingUnits, setIsImportingUnits] = useState(false);
+  const [isImportingKpis, setIsImportingKpis] = useState(false);
   const [isKpiResultsLoading, setIsKpiResultsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -524,6 +525,7 @@ export function SettingsDashboard() {
   const [editingUnit, setEditingUnit] = useState<HealthUnitItem | null>(null);
   const [editUnitForm, setEditUnitForm] = useState<UnitFormState>(emptyUnitForm);
   const [unitDemographicHistory, setUnitDemographicHistory] = useState<DemographicHistoryItem[]>([]);
+  const kpiImportInputRef = useRef<HTMLInputElement | null>(null);
 
   async function fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, { cache: "no-store" });
@@ -1353,6 +1355,47 @@ export function SettingsDashboard() {
     }
   }
 
+  async function handleImportKpiDefinitions(file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    resetFeedback();
+    setIsImportingKpis(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/kpi-definitions/import", {
+        method: "POST",
+        body: formData,
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        message?: string;
+        created?: number;
+        updated?: number;
+        skippedRowsCount?: number;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถนำเข้า KPI ได้");
+      }
+
+      const skippedText = body.skippedRowsCount ? `, ข้าม ${body.skippedRowsCount} แถว` : "";
+      setMessage(body.message || `นำเข้า KPI สำเร็จ: เพิ่ม ${body.created ?? 0} รายการ, อัปเดต ${body.updated ?? 0} รายการ${skippedText}`);
+      await loadData();
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "ไม่สามารถนำเข้า KPI ได้");
+    } finally {
+      setIsImportingKpis(false);
+      if (kpiImportInputRef.current) {
+        kpiImportInputRef.current.value = "";
+      }
+    }
+  }
+
   async function handleCreateKpiCategory(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     resetFeedback();
@@ -2004,7 +2047,22 @@ export function SettingsDashboard() {
                   <CardTitle className="text-xl">จัดการ KPI Master</CardTitle>
                   <CardDescription>แก้ไขและลบตัวชี้วัด โดยจะลบไม่ได้หากมีผลลัพธ์ KPI ผูกอยู่</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 md:flex-row">
+                  <input
+                    ref={kpiImportInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={(event) => void handleImportKpiDefinitions(event.target.files?.[0] ?? null)}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => kpiImportInputRef.current?.click()}
+                    disabled={isImportingKpis || isLoading}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isImportingKpis ? "กำลังนำเข้า..." : "นำเข้า KPI"}
+                  </Button>
                   <Input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="ค้นหารหัส KPI ชื่อ หรือหมวด" className="w-full md:w-72" />
                   <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
                     <RefreshCcw className="h-4 w-4" />

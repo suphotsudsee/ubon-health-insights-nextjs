@@ -178,6 +178,8 @@
   },
   "active": "3823e744f0080699",
   "lastOpenFiles": [
+    "app/api/kpi-definitions/import/route.ts",
+    "app/api/kpi-definitions/import",
     "scripts/reset-admin-password.js",
     "pages/projects/settings-import-buttons-2026-04-29.md",
     "tmp/expense-samples/sample-4.xlsx",
@@ -202,7 +204,6 @@
     "ยังไม่ได้ตั้งชื่อ.canvas",
     "ยังไม่ได้ตั้งชื่อ 2.base",
     "ยังไม่ได้ตั้งชื่อ 1.base",
-    "ยังไม่ได้ตั้งชื่อ.base",
     "docs/task-product-manager.md",
     "docs/folder-structure.md",
     "README.md",
@@ -213,7 +214,6 @@
     "pages/topics/second-brain.md",
     "pages/topics/llm-wiki.md",
     "raw/sources/2026-04-19-llm-wiki-pattern.md",
-    "meta/folder-conventions.md",
-    "templates"
+    "meta/folder-conventions.md"
   ]
 }
