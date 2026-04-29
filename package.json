@@ -15,6 +15,7 @@
     "db:seed:production": "node scripts/bootstrap-production.js --seed-only",
     "db:import:finance": "tsx -r dotenv/config scripts/import-finance-xlsx.ts",
     "db:import:transfer": "tsx -r dotenv/config scripts/import-transfer-csv.ts",
+    "db:import:users": "tsx -r dotenv/config scripts/import-users-csv.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset"
   },
