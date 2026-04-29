@@ -74,6 +74,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/scripts/bootstrap-production.js ./scripts/bootstrap-production.js
 COPY --from=builder /app/scripts/import-users-csv.js ./scripts/import-users-csv.js
+COPY --from=builder /app/scripts/reset-admin-password.js ./scripts/reset-admin-password.js
 COPY --from=builder /app/data ./data
 
 # Set proper ownership
