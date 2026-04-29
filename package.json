@@ -16,6 +16,7 @@
     "db:import:finance": "tsx -r dotenv/config scripts/import-finance-xlsx.ts",
     "db:import:transfer": "tsx -r dotenv/config scripts/import-transfer-csv.ts",
     "db:import:users": "tsx -r dotenv/config scripts/import-users-csv.ts",
+    "db:import:users:prod": "node scripts/import-users-csv.js",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset"
   },
