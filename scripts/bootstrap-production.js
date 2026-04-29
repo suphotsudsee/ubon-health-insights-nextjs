@@ -299,7 +299,7 @@ async function ensureAdminUser() {
   const name = process.env.ADMIN_NAME || "ADMIN Ubon";
   const passwordHash =
     process.env.ADMIN_PASSWORD_HASH ||
-    "$2a$12$lJNvdmuznRxQoljlo7SfTuol.b0HSGZsN8bel2SXpS9ICO7IM.dCS";
+    "$2a$12$afuD0nDBSDseejKIh95SuOLIrN9vOzkUpat6RSneAlHv4KFHd0cSi";
 
   const user = await prisma.user.upsert({
     where: { email },
