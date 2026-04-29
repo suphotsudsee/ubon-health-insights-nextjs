@@ -493,6 +493,7 @@ export function SettingsDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isImportingUsers, setIsImportingUsers] = useState(false);
+  const [isImportingUnits, setIsImportingUnits] = useState(false);
   const [isKpiResultsLoading, setIsKpiResultsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -1157,6 +1158,41 @@ export function SettingsDashboard() {
       setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบหน่วยบริการได้");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleImportUnits() {
+    const confirmed = window.confirm("นำเข้าข้อมูลพื้นฐาน รพ.สต. จากไฟล์ CSV และอัปเดตข้อมูลประชากรงวดปัจจุบัน?");
+    if (!confirmed) {
+      return;
+    }
+
+    resetFeedback();
+    setIsImportingUnits(true);
+
+    try {
+      const response = await fetch("/api/health-units/import-basic", { method: "POST" });
+      const body = (await response.json()) as {
+        error?: string;
+        csvRows?: number;
+        createdUnits?: number;
+        updatedUnits?: number;
+        demographicsUpserts?: number;
+        skippedRowsCount?: number;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถนำเข้าข้อมูลหน่วยบริการได้");
+      }
+
+      setMessage(
+        `นำเข้าข้อมูลหน่วยบริการเรียบร้อย: ทั้งหมด ${body.csvRows ?? 0} รายการ, สร้างใหม่ ${body.createdUnits ?? 0}, อัปเดต ${body.updatedUnits ?? 0}, ข้อมูลประชากร ${body.demographicsUpserts ?? 0}, ข้าม ${body.skippedRowsCount ?? 0}`
+      );
+      await loadData();
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "ไม่สามารถนำเข้าข้อมูลหน่วยบริการได้");
+    } finally {
+      setIsImportingUnits(false);
     }
   }
 
@@ -1827,6 +1863,10 @@ export function SettingsDashboard() {
                   <option value="M">M</option>
                   <option value="L">L</option>
                 </select>
+                <Button variant="outline" onClick={() => void handleImportUnits()} disabled={isImportingUnits || isLoading}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {isImportingUnits ? "กำลังนำเข้า..." : "นำเข้าข้อมูล"}
+                </Button>
                 <Button variant="outline" onClick={() => void loadData()} disabled={isLoading}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Refresh
