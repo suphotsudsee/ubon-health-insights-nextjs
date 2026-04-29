@@ -3,6 +3,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
+const DEFAULT_PUBLIC_URL = "https://coolify.phoubon.in.th";
+
 function isEnabled(value) {
   return ["1", "true", "yes", "on"].includes(String(value || "").trim().toLowerCase());
 }
@@ -44,16 +46,48 @@ function normalizeDatabaseUrl() {
   process.env.DATABASE_URL = nextValue || fallback;
 }
 
+function isLocalhostUrl(value) {
+  return /^https?:\/\/localhost(?::\d+)?\/?$/i.test(value);
+}
+
+function isIpUrl(value) {
+  try {
+    const url = new URL(value);
+    return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function normalizePublicUrl(value) {
+  const nextValue = value?.trim().replace(/\/+$/, "");
+  if (!nextValue) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(nextValue)) {
+    return nextValue;
+  }
+
+  return `https://${nextValue}`;
+}
+
 function normalizeNextAuthUrl() {
-  const current = expandEnvTemplate(process.env.NEXTAUTH_URL)?.trim();
-  if (current && !/^https?:\/\/localhost(?::\d+)?\/?$/i.test(current)) {
+  const current = normalizePublicUrl(expandEnvTemplate(process.env.NEXTAUTH_URL));
+  if (current && !isLocalhostUrl(current) && !isIpUrl(current)) {
     process.env.NEXTAUTH_URL = current.replace(/\/+$/, "");
     return;
   }
 
-  const coolifyUrls = (process.env.COOLIFY_URL || "")
+  const coolifyUrls = [
+    process.env.COOLIFY_URL,
+    process.env.COOLIFY_FQDN,
+    DEFAULT_PUBLIC_URL,
+  ]
+    .filter(Boolean)
+    .join(",")
     .split(",")
-    .map((value) => value.trim().replace(/\/+$/, ""))
+    .map(normalizePublicUrl)
     .filter(Boolean);
 
   const preferredUrl =
@@ -66,8 +100,7 @@ function normalizeNextAuthUrl() {
     return;
   }
 
-  const appPort = process.env.PORT || process.env.APP_PORT || "3010";
-  process.env.NEXTAUTH_URL = `http://localhost:${appPort}`;
+  process.env.NEXTAUTH_URL = DEFAULT_PUBLIC_URL;
 }
 
 function normalizeNextAuthSecret() {
