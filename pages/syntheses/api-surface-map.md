@@ -3,7 +3,7 @@ title: API Surface Map
 type: synthesis
 status: active
 created: 2026-04-19
-updated: 2026-04-19
+updated: 2026-04-29
 tags:
   - synthesis
   - api
@@ -26,6 +26,7 @@ This note maps the route-handler surface and highlights that the project current
   - [app/api/auth/[...nextauth]/route.ts](../../app/api/auth/[...nextauth]/route.ts)
   - [src/app/api/auth/users/route.ts](../../src/app/api/auth/users/route.ts)
   - [app/api/auth/users/route.ts](../../app/api/auth/users/route.ts)
+  - [app/api/auth/users/import/route.ts](../../app/api/auth/users/import/route.ts)
 - Finance
   - [src/app/api/finance/records/route.ts](../../src/app/api/finance/records/route.ts)
   - [src/app/api/finance/records/[id]/route.ts](../../src/app/api/finance/records/[id]/route.ts)
@@ -58,6 +59,7 @@ This note maps the route-handler surface and highlights that the project current
   - [src/app/api/fiscal-periods/[id]/route.ts](../../src/app/api/fiscal-periods/[id]/route.ts)
   - [app/api/health-units/route.ts](../../app/api/health-units/route.ts)
   - [app/api/health-units/[id]/route.ts](../../app/api/health-units/[id]/route.ts)
+  - [app/api/health-units/import-basic/route.ts](../../app/api/health-units/import-basic/route.ts)
   - [app/api/fiscal-periods/route.ts](../../app/api/fiscal-periods/route.ts)
   - [app/api/fiscal-periods/[id]/route.ts](../../app/api/fiscal-periods/[id]/route.ts)
 - Dashboard and health
@@ -65,6 +67,7 @@ This note maps the route-handler surface and highlights that the project current
   - [app/api/health/route.ts](../../app/api/health/route.ts)
 
 ## Related
+- [../projects/settings-import-buttons-2026-04-29.md](../projects/settings-import-buttons-2026-04-29.md)
 - [finance-domain-map.md](./finance-domain-map.md)
 - [kpi-domain-map.md](./kpi-domain-map.md)
 - [settings-admin-domain-map.md](./settings-admin-domain-map.md)

@@ -13,6 +13,7 @@ This is the entry point for the vault. Read this file first when navigating or a
 
 ## Projects
 - [pages/projects/ubon-health-insights-code-map.md](./pages/projects/ubon-health-insights-code-map.md): hub note for navigating the application codebase through linked architecture notes and key files.
+- [pages/projects/settings-import-buttons-2026-04-29.md](./pages/projects/settings-import-buttons-2026-04-29.md): implementation note for admin CSV import buttons for users and health units.
 
 ## People
 - No person pages yet.

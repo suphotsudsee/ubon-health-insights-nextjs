@@ -178,6 +178,7 @@
   },
   "active": "3823e744f0080699",
   "lastOpenFiles": [
+    "pages/projects/settings-import-buttons-2026-04-29.md",
     "tmp/expense-samples/sample-4.xlsx",
     "tmp/expense-samples/sample-3.xlsx",
     "tmp/expense-samples/sample-2.xlsx",
@@ -213,7 +214,6 @@
     "raw/sources/2026-04-19-llm-wiki-pattern.md",
     "meta/folder-conventions.md",
     "log.md",
-    "templates",
-    "meta"
+    "templates"
   ]
 }

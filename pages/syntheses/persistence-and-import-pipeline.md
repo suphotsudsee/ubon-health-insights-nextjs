@@ -3,7 +3,7 @@ title: Persistence And Import Pipeline
 type: synthesis
 status: active
 created: 2026-04-19
-updated: 2026-04-19
+updated: 2026-04-29
 tags:
   - synthesis
   - database
@@ -29,6 +29,12 @@ This note maps how the system stores core entities and how seed/import scripts m
 - [scripts/seed-demo-data.ts](../../scripts/seed-demo-data.ts): demo data seeding.
 - [scripts/import-finance-xlsx.ts](../../scripts/import-finance-xlsx.ts): finance import path.
 - [scripts/import-transfer-csv.ts](../../scripts/import-transfer-csv.ts): transfer import path.
+- [scripts/import-users-csv.ts](../../scripts/import-users-csv.ts): local user CSV import path.
+- [scripts/import-users-csv.js](../../scripts/import-users-csv.js): production-safe user CSV import helper copied into the Docker image.
+- [data/user-state-phoubon.csv](../../data/user-state-phoubon.csv): bundled staff user import source.
+- [data/health-units-basic.csv](../../data/health-units-basic.csv): bundled basic health unit import source.
+- [app/api/auth/users/import/route.ts](../../app/api/auth/users/import/route.ts): admin-triggered staff user import endpoint.
+- [app/api/health-units/import-basic/route.ts](../../app/api/health-units/import-basic/route.ts): admin-triggered health unit baseline import endpoint.
 - [src/actions/finance.ts](../../src/actions/finance.ts): finance data mutation/query layer.
 - [src/actions/kpi.ts](../../src/actions/kpi.ts): KPI action layer.
 - [src/actions/health-units.ts](../../src/actions/health-units.ts): health unit and demographic action layer.
@@ -43,6 +49,7 @@ This note maps how the system stores core entities and how seed/import scripts m
 - Audit logs
 
 ## Related
+- [../projects/settings-import-buttons-2026-04-29.md](../projects/settings-import-buttons-2026-04-29.md)
 - [dashboard-data-flow.md](./dashboard-data-flow.md)
 - [auth-and-access-control.md](./auth-and-access-control.md)
 - [../projects/ubon-health-insights-code-map.md](../projects/ubon-health-insights-code-map.md)
