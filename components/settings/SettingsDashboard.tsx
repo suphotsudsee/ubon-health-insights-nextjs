@@ -11,6 +11,7 @@ import {
   RefreshCcw,
   Settings2,
   Trash2,
+  Upload,
   UserCog,
   Users,
 } from "lucide-react";
@@ -491,6 +492,7 @@ export function SettingsDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImportingUsers, setIsImportingUsers] = useState(false);
   const [isKpiResultsLoading, setIsKpiResultsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -850,6 +852,40 @@ export function SettingsDashboard() {
       setError(deleteError instanceof Error ? deleteError.message : "ไม่สามารถลบผู้ใช้ได้");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleImportUsers() {
+    const confirmed = window.confirm("นำเข้าผู้ใช้เจ้าหน้าที่จากไฟล์ CSV และตั้งรหัสผ่านเป็น 12345678! ?");
+    if (!confirmed) {
+      return;
+    }
+
+    resetFeedback();
+    setIsImportingUsers(true);
+
+    try {
+      const response = await fetch("/api/auth/users/import", { method: "POST" });
+      const body = (await response.json()) as {
+        error?: string;
+        csvRows?: number;
+        createdUsers?: number;
+        updatedUsers?: number;
+        skippedRowsCount?: number;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "ไม่สามารถนำเข้าผู้ใช้ได้");
+      }
+
+      setMessage(
+        `นำเข้าผู้ใช้เรียบร้อย: ทั้งหมด ${body.csvRows ?? 0} รายการ, สร้างใหม่ ${body.createdUsers ?? 0}, อัปเดต ${body.updatedUsers ?? 0}, ข้าม ${body.skippedRowsCount ?? 0}`
+      );
+      await loadData();
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "ไม่สามารถนำเข้าผู้ใช้ได้");
+    } finally {
+      setIsImportingUsers(false);
     }
   }
 
@@ -1686,8 +1722,12 @@ export function SettingsDashboard() {
                   <CardTitle className="text-xl">จัดการผู้ใช้</CardTitle>
                   <CardDescription>แก้ไขสิทธิ์ ผูกหน่วยบริการ หรือปิดใช้งานบัญชีผู้ใช้</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาชื่อ อีเมล หรือหน่วยบริการ" className="w-full md:w-72" />
+                  <Button variant="outline" onClick={() => void handleImportUsers()} disabled={isImportingUsers || isLoading}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isImportingUsers ? "กำลังนำเข้า..." : "นำเข้าผู้ใช้"}
+                  </Button>
                   <Button variant="outline" size="icon" onClick={() => void loadData()} disabled={isLoading}>
                     <RefreshCcw className="h-4 w-4" />
                   </Button>
