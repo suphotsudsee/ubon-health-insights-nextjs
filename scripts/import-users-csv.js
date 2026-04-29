@@ -42,19 +42,17 @@ function parseCsv(text) {
   const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return [];
 
-  const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, "").trim());
-
   return lines
     .slice(1)
     .map((line) => {
       const values = parseCsvLine(line);
-      const row = {};
-      headers.forEach((header, index) => {
-        row[header] = (values[index] || "").trim();
-      });
-      return row;
+      return {
+        name: (values[0] || "").trim(),
+        email: (values[1] || "").trim(),
+        healthUnitCode: (values[2] || "").trim(),
+      };
     })
-    .filter((row) => row["ชื่อ-สกุล"] || row["E-mail"] || row["รหัส รพ.สต."] || row["ชื่อ รพ.สต."]);
+    .filter((row) => row.name || row.email || row.healthUnitCode);
 }
 
 function normalizeEmail(value) {
@@ -90,9 +88,9 @@ async function main() {
 
   for (const [index, row] of rows.entries()) {
     const rowNumber = index + 2;
-    const name = (row["ชื่อ-สกุล"] || "").trim();
-    const email = normalizeEmail(row["E-mail"] || "");
-    const healthUnitCode = (row["รหัส รพ.สต."] || "").trim();
+    const name = row.name.trim();
+    const email = normalizeEmail(row.email);
+    const healthUnitCode = row.healthUnitCode.trim();
 
     if (!name || !email || !healthUnitCode) {
       skippedRows.push({ row: rowNumber, reason: "missing required field", email, healthUnitCode });

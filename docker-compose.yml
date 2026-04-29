@@ -54,7 +54,10 @@ services:
 
       # Application environment
       - NODE_ENV=production
-      - BOOTSTRAP_SEED=${BOOTSTRAP_SEED:-false}
+      - BOOTSTRAP_SEED=${BOOTSTRAP_SEED:-true}
+      - BOOTSTRAP_ADMIN=${BOOTSTRAP_ADMIN:-true}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@ubonlocal.go.th}
+      - ADMIN_NAME=${ADMIN_NAME:-ADMIN Ubon}
 
       # Optional: OAuth providers
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}

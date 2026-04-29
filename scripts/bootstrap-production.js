@@ -92,7 +92,8 @@ function normalizeNextAuthSecret() {
 function normalizeRuntimeEnvironment() {
   process.env.PORT = process.env.PORT || process.env.APP_PORT || "3010";
   process.env.AUTH_TRUST_HOST = process.env.AUTH_TRUST_HOST || "true";
-  process.env.BOOTSTRAP_SEED = process.env.BOOTSTRAP_SEED || "false";
+  process.env.BOOTSTRAP_SEED = process.env.BOOTSTRAP_SEED || "true";
+  process.env.BOOTSTRAP_ADMIN = process.env.BOOTSTRAP_ADMIN || "true";
 
   normalizeDatabaseUrl();
   normalizeNextAuthUrl();
@@ -104,6 +105,7 @@ function normalizeRuntimeEnvironment() {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? "[set]" : "[missing]",
     PORT: process.env.PORT,
     BOOTSTRAP_SEED: process.env.BOOTSTRAP_SEED,
+    BOOTSTRAP_ADMIN: process.env.BOOTSTRAP_ADMIN,
   });
 }
 
@@ -252,6 +254,42 @@ async function runPrismaDbPush() {
     ["node_modules/prisma/build/index.js", "db", "push", "--skip-generate", "--accept-data-loss"],
     "prisma db push",
   );
+}
+
+async function ensureAdminUser() {
+  if (!isEnabled(process.env.BOOTSTRAP_ADMIN)) {
+    console.log("BOOTSTRAP_ADMIN is disabled, skipping admin upsert.");
+    return;
+  }
+
+  const email = process.env.ADMIN_EMAIL || "admin@ubonlocal.go.th";
+  const name = process.env.ADMIN_NAME || "ADMIN Ubon";
+  const passwordHash =
+    process.env.ADMIN_PASSWORD_HASH ||
+    "$2a$12$lJNvdmuznRxQoljlo7SfTuol.b0HSGZsN8bel2SXpS9ICO7IM.dCS";
+
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {
+      name,
+      passwordHash,
+      role: "admin",
+      healthUnitId: null,
+      isActive: true,
+      loginAttempts: 0,
+      lockedUntil: null,
+    },
+    create: {
+      email,
+      passwordHash,
+      name,
+      role: "admin",
+      isActive: true,
+    },
+    select: { id: true, email: true, role: true, isActive: true },
+  });
+
+  console.log("Admin user ensured:", user);
 }
 
 function thaiMonthName(month) {
@@ -683,6 +721,7 @@ async function bootstrap() {
   await ensureUtf8mb4Encoding();
 
   await runPrismaDbPush();
+  await ensureAdminUser();
 
   if (!isEnabled(process.env.BOOTSTRAP_SEED)) {
     console.log("BOOTSTRAP_SEED is disabled, skipping production seed import.");
@@ -699,6 +738,7 @@ async function seedOnly() {
     await ensureUtf8mb4Encoding();
     console.log("Running prisma db push before manual seed...");
     await runPrismaDbPush();
+    await ensureAdminUser();
 
     console.log("Running manual production seed import...");
     await importTransferSeed();

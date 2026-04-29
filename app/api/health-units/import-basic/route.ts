@@ -7,23 +7,23 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 type CsvRow = {
-  "ที่อยู่อีเมล": string;
-  "รหัสหน่วยบริการ และ ชื่อ รพ.สต.": string;
-  "หมู่ที่": string;
-  "ตำบล": string;
-  "อำเภอ": string;
-  "ประชากรทั้งหมด (คน)": string;
-  "ประชากร ชาย (คน)": string;
-  "ประชากร หญิง (คน)": string;
-  "อสม. (คน)": string;
-  "จำนวนหมู่บ้าน": string;
-  "จำนวนหลังคาเรือน": string;
-  "จำนวนผู้สูงอายุ (คน)": string;
-  "จำนวนวัด/สำนักสงฆ์": string;
-  "จำนวนโรงเรียนประถม": string;
-  "จำนวนโรงเรียนขยายโอกาส": string;
-  "จำนวนโรงเรียนมัธยม": string;
-  "ศพค. / สถานีสุขภาพ": string;
+  email: string;
+  unit: string;
+  moo: string;
+  tambon: string;
+  amphoe: string;
+  totalPopulation: string;
+  male: string;
+  female: string;
+  volunteers: string;
+  villages: string;
+  households: string;
+  elderly: string;
+  temples: string;
+  primarySchools: string;
+  opportunitySchools: string;
+  secondarySchools: string;
+  healthStations: string;
 };
 
 function parseCsvLine(line: string) {
@@ -61,19 +61,31 @@ function parseCsv(text: string): CsvRow[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return [];
 
-  const headers = parseCsvLine(lines[0]).map((header) => normalizeText(header.replace(/^\uFEFF/, "")));
-
   return lines
     .slice(1)
     .map((line) => {
       const values = parseCsvLine(line);
-      const row = {} as Record<string, string>;
-      headers.forEach((header, index) => {
-        row[header] = normalizeText(values[index] ?? "");
-      });
-      return row as CsvRow;
+      return {
+        email: normalizeText(values[1] ?? ""),
+        unit: normalizeText(values[2] ?? ""),
+        moo: normalizeText(values[3] ?? ""),
+        tambon: normalizeText(values[4] ?? ""),
+        amphoe: normalizeText(values[5] ?? ""),
+        totalPopulation: normalizeText(values[6] ?? ""),
+        male: normalizeText(values[7] ?? ""),
+        female: normalizeText(values[8] ?? ""),
+        volunteers: normalizeText(values[9] ?? ""),
+        villages: normalizeText(values[10] ?? ""),
+        households: normalizeText(values[11] ?? ""),
+        elderly: normalizeText(values[12] ?? ""),
+        temples: normalizeText(values[13] ?? ""),
+        primarySchools: normalizeText(values[14] ?? ""),
+        opportunitySchools: normalizeText(values[15] ?? ""),
+        secondarySchools: normalizeText(values[16] ?? ""),
+        healthStations: normalizeText(values[17] ?? ""),
+      };
     })
-    .filter((row) => row["รหัสหน่วยบริการ และ ชื่อ รพ.สต."]);
+    .filter((row) => row.unit);
 }
 
 function normalizeText(value: string) {
@@ -179,12 +191,12 @@ export async function POST() {
 
     for (const [index, row] of rows.entries()) {
       const rowNumber = index + 2;
-      const unit = splitCodeAndName(row["รหัสหน่วยบริการ และ ชื่อ รพ.สต."] || "");
-      const amphoeName = normalizeText(row["อำเภอ"] || "");
-      const tambonName = normalizeText(row["ตำบล"] || "");
+      const unit = splitCodeAndName(row.unit);
+      const amphoeName = normalizeText(row.amphoe);
+      const tambonName = normalizeText(row.tambon);
 
       if (!unit.code || !unit.name || !amphoeName) {
-        skippedRows.push({ row: rowNumber, reason: "missing unit code/name or district", unit: row["รหัสหน่วยบริการ และ ชื่อ รพ.สต."] });
+        skippedRows.push({ row: rowNumber, reason: "missing unit code/name or district", unit: row.unit });
         continue;
       }
 
@@ -195,22 +207,22 @@ export async function POST() {
         select: { id: true },
       });
 
-      const totalPopulation = toNullableInt(row["ประชากรทั้งหมด (คน)"]);
+      const totalPopulation = toNullableInt(row.totalPopulation);
       const payload = {
         name: unit.name,
         shortName: unit.name,
         amphoeId: amphoe.id,
         tambonId,
-        moo: normalizeText(row["หมู่ที่"] || "") || null,
-        email: normalizeText(row["ที่อยู่อีเมล"] || "") || null,
+        moo: normalizeText(row.moo) || null,
+        email: normalizeText(row.email) || null,
         affiliation: "อบจ.อุบลราชธานี",
         province: "อุบลราชธานี",
         ucPopulation68: totalPopulation,
-        templeCount: toCount(row["จำนวนวัด/สำนักสงฆ์"]),
-        primarySchoolCount: toCount(row["จำนวนโรงเรียนประถม"]),
-        opportunitySchoolCount: toCount(row["จำนวนโรงเรียนขยายโอกาส"]),
-        secondarySchoolCount: toCount(row["จำนวนโรงเรียนมัธยม"]),
-        healthStationCount: toCount(row["ศพค. / สถานีสุขภาพ"]),
+        templeCount: toCount(row.temples),
+        primarySchoolCount: toCount(row.primarySchools),
+        opportunitySchoolCount: toCount(row.opportunitySchools),
+        secondarySchoolCount: toCount(row.secondarySchools),
+        healthStationCount: toCount(row.healthStations),
         status: "active" as const,
         isDeleted: false,
       };
@@ -245,22 +257,22 @@ export async function POST() {
         create: {
           healthUnitId: healthUnit.id,
           fiscalPeriodId: currentPeriod.id,
-          male: toNullableInt(row["ประชากร ชาย (คน)"]),
-          female: toNullableInt(row["ประชากร หญิง (คน)"]),
+          male: toNullableInt(row.male),
+          female: toNullableInt(row.female),
           totalPopulation,
-          elderlyPopulation: toNullableInt(row["จำนวนผู้สูงอายุ (คน)"]),
-          villages: toNullableInt(row["จำนวนหมู่บ้าน"]),
-          households: toNullableInt(row["จำนวนหลังคาเรือน"]),
-          healthVolunteers: toNullableInt(row["อสม. (คน)"]),
+          elderlyPopulation: toNullableInt(row.elderly),
+          villages: toNullableInt(row.villages),
+          households: toNullableInt(row.households),
+          healthVolunteers: toNullableInt(row.volunteers),
         },
         update: {
-          male: toNullableInt(row["ประชากร ชาย (คน)"]),
-          female: toNullableInt(row["ประชากร หญิง (คน)"]),
+          male: toNullableInt(row.male),
+          female: toNullableInt(row.female),
           totalPopulation,
-          elderlyPopulation: toNullableInt(row["จำนวนผู้สูงอายุ (คน)"]),
-          villages: toNullableInt(row["จำนวนหมู่บ้าน"]),
-          households: toNullableInt(row["จำนวนหลังคาเรือน"]),
-          healthVolunteers: toNullableInt(row["อสม. (คน)"]),
+          elderlyPopulation: toNullableInt(row.elderly),
+          villages: toNullableInt(row.villages),
+          households: toNullableInt(row.households),
+          healthVolunteers: toNullableInt(row.volunteers),
         },
       });
       demographicsUpserts += 1;
