@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "2f2567b4c196f042",
+        "id": "3fbff23f6b2a40e8",
         "type": "tabs",
         "children": [
           {
-            "id": "4d71d059813ae4e9",
+            "id": "3cc037766985c59b",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "graph",
               "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -176,19 +176,21 @@
       "bases:Create new base": false
     }
   },
-  "active": "4d71d059813ae4e9",
+  "active": "3cc037766985c59b",
   "lastOpenFiles": [
+    "Untitled.md",
+    "Untitled 1.base",
+    "Untitled.canvas",
+    "pages/projects/settings-import-buttons-2026-04-29.md",
     "Untitled.base",
     "app/api/kpi-definitions/import/route.ts",
     "app/api/kpi-definitions/import",
     "scripts/reset-admin-password.js",
-    "pages/projects/settings-import-buttons-2026-04-29.md",
     "tmp/expense-samples/sample-4.xlsx",
     "tmp/expense-samples/sample-3.xlsx",
     "tmp/expense-samples/sample-2.xlsx",
     "tmp/expense-samples/sample-1.xlsx",
     "tmp/expense-samples",
-    "tmp",
     "pages/syntheses/api-surface-map.md",
     "pages/syntheses/kpi-domain-map.md",
     "hotcache.md",
@@ -203,7 +205,6 @@
     "pages/syntheses/dashboard-data-flow.md",
     "pages/syntheses/app-shell-and-navigation.md",
     "ยังไม่ได้ตั้งชื่อ.canvas",
-    "ยังไม่ได้ตั้งชื่อ 2.base",
     "docs/task-product-manager.md",
     "docs/folder-structure.md",
     "README.md",
