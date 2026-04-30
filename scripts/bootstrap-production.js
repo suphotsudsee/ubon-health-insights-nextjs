@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DEFAULT_PUBLIC_URL = "https://coolify.phoubon.in.th";
+const DEFAULT_FISCAL_YEARS = [2569];
 
 function isEnabled(value) {
   return ["1", "true", "yes", "on"].includes(String(value || "").trim().toLowerCase());
@@ -345,7 +346,7 @@ function thaiMonthName(month) {
 }
 
 function gregorianYearForFiscalMonth(fiscalYear, month) {
-  return month >= 10 ? fiscalYear - 543 : fiscalYear - 542;
+  return month >= 10 ? fiscalYear - 544 : fiscalYear - 543;
 }
 
 function quarterForMonth(month) {
@@ -387,6 +388,26 @@ async function ensureFiscalPeriods(fiscalYear) {
         endDate,
       },
     });
+  }
+}
+
+function defaultFiscalYears() {
+  const configuredYears = (process.env.DEFAULT_FISCAL_YEARS || "")
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value) && value >= 2500 && value <= 3000);
+
+  if (configuredYears.length > 0) {
+    return [...new Set(configuredYears)];
+  }
+
+  return DEFAULT_FISCAL_YEARS;
+}
+
+async function ensureDefaultFiscalPeriods() {
+  for (const fiscalYear of defaultFiscalYears()) {
+    console.log(`Ensuring fiscal periods for ${fiscalYear}...`);
+    await ensureFiscalPeriods(fiscalYear);
   }
 }
 
@@ -755,6 +776,7 @@ async function bootstrap() {
 
   await runPrismaDbPush();
   await ensureAdminUser();
+  await ensureDefaultFiscalPeriods();
 
   if (!isEnabled(process.env.BOOTSTRAP_SEED)) {
     console.log("BOOTSTRAP_SEED is disabled, skipping production seed import.");

@@ -54,6 +54,7 @@ services:
 
       # Application environment
       - NODE_ENV=production
+      - DEFAULT_FISCAL_YEARS=${DEFAULT_FISCAL_YEARS:-2569}
       - BOOTSTRAP_SEED=${BOOTSTRAP_SEED:-true}
       - BOOTSTRAP_ADMIN=${BOOTSTRAP_ADMIN:-true}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@ubonlocal.go.th}
