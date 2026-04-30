@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "537e2dec97e480d5",
+        "id": "2f2567b4c196f042",
         "type": "tabs",
         "children": [
           {
-            "id": "3823e744f0080699",
+            "id": "4d71d059813ae4e9",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ]
@@ -176,8 +176,9 @@
       "bases:Create new base": false
     }
   },
-  "active": "3823e744f0080699",
+  "active": "4d71d059813ae4e9",
   "lastOpenFiles": [
+    "Untitled.base",
     "app/api/kpi-definitions/import/route.ts",
     "app/api/kpi-definitions/import",
     "scripts/reset-admin-password.js",
@@ -203,7 +204,6 @@
     "pages/syntheses/app-shell-and-navigation.md",
     "ยังไม่ได้ตั้งชื่อ.canvas",
     "ยังไม่ได้ตั้งชื่อ 2.base",
-    "ยังไม่ได้ตั้งชื่อ 1.base",
     "docs/task-product-manager.md",
     "docs/folder-structure.md",
     "README.md",
