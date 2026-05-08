@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-const DEFAULT_PUBLIC_URL = "https://coolify.phoubon.in.th";
+const DEFAULT_PUBLIC_URL = "http://localhost:3010";
 const DEFAULT_FISCAL_YEARS = [2569];
 
 function isEnabled(value) {
@@ -81,8 +81,10 @@ function normalizeNextAuthUrl() {
   }
 
   const coolifyUrls = [
-    process.env.COOLIFY_URL,
+    process.env.SERVICE_URL_APP,
+    process.env.SERVICE_FQDN_APP,
     process.env.COOLIFY_FQDN,
+    process.env.COOLIFY_URL,
     DEFAULT_PUBLIC_URL,
   ]
     .filter(Boolean)
@@ -92,7 +94,6 @@ function normalizeNextAuthUrl() {
     .filter(Boolean);
 
   const preferredUrl =
-    coolifyUrls.find((value) => value.startsWith("https://") && !value.includes("sslip.io")) ||
     coolifyUrls.find((value) => value.startsWith("https://")) ||
     coolifyUrls.find((value) => value.startsWith("http://"));
 
