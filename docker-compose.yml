@@ -47,7 +47,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-mysql://root:${DB_ROOT_PASSWORD:-12345678}@db:${DB_PORT:-3306}/${DB_NAME:-ubon_health}}
 
       # NextAuth.js configuration
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://cr3nzpr5o1c5apj2abycaq5b.76.13.185.54.sslip.io:3010}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://snwzcopugvvvccmq55r8nuvu.76.13.185.54.sslip.io:3010}
       - PORT=${PORT:-3010}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
