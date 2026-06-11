@@ -2,6 +2,7 @@ const { spawn } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 
 const DEFAULT_PUBLIC_URL = "http://localhost:3010";
 const DEFAULT_FISCAL_YEARS = [2569];
