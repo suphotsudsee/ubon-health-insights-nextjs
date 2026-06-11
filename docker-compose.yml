@@ -59,6 +59,7 @@ services:
       - BOOTSTRAP_ADMIN=${BOOTSTRAP_ADMIN:-true}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@ubonlocal.go.th}
       - ADMIN_NAME=${ADMIN_NAME:-ADMIN Ubon}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
 
       # Optional: OAuth providers
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
